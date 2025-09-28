@@ -1,0 +1,62 @@
+@startuml
+
+!include docs/uml/theme.puml
+left to right direction
+skinparam linetype ortho
+' === External Actors ===
+actor "User\n(Worker/Courier/Tourist)" as User
+package "External Data Sources" {
+  left to right direction
+  actor "Map Services" as MapAPI
+  actor "Meteo Sources" as Meteo
+  actor "Local Open Data" as OpenData
+}
+actor "Map Services" as MapAPI
+actor "Meteo Sources" as Meteo
+actor "Local Open Data" as OpenData
+
+' === System Components ===
+package "SafeNav System" {
+
+  component "SafeNav UI" as UI
+  component "Trip Manager" as TripMgr
+  component "Routing Engine" as Router
+  component "Comfort Scorer" as Scorer
+  component "Environmental Context" as Context
+
+}
+
+' === Actor to Component Interactions ===
+User --> UI : defines trip,\nviews results
+MapAPI --> Context : tiles, streets
+Meteo --> Context : temperature,\ncloud cover
+OpenData --> Context : trees,\nbuildings,\nwater
+
+' === Internal Component Relationships ===
+UI --> TripMgr : trip input
+TripMgr --> Context : request environment
+TripMgr --> Router : get routes
+TripMgr --> Scorer : score routes
+
+Router --> Context : shade, terrain
+Scorer --> Context : heat, water data
+
+
+note bottom of UI
+Handles all user interactions:
+• Trip definition (origin/destination)
+• Display of route alternatives
+• Route selection and guidance
+UI may be web or mobile.
+end note
+
+note bottom of TripMgr
+Core orchestrator for trip planning:
+• Validates trip input
+• Triggers environmental/context update
+• Coordinates routing and scoring
+• Prepares results for the UI
+end note
+
+
+@enduml

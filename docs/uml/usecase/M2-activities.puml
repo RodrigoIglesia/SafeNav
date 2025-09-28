@@ -1,0 +1,25 @@
+@startuml
+
+!include docs/uml/theme.puml
+
+participant "Trip Manager" as TripMgr
+participant "Environmental Context" as Context
+participant "Routing Engine" as Router
+participant "Comfort Scorer" as Scorer
+
+== Triggered after trip object creation ==
+
+TripMgr -> Context : Request environmental context\n(buildings, trees, weather)
+Context -> Context : Merge weather, solar position,\nshade, street geometry
+Context --> TripMgr : Return enriched context
+
+TripMgr -> Router : Request route candidates (e.g. A*, 2 options)
+Router -> Context : Use enriched spatial data
+Router --> TripMgr : Return candidate routes
+
+TripMgr -> Scorer : Evaluate comfort of each route
+Scorer -> Context : Get shade, temperature, water proximity
+Scorer -> Scorer : Score time vs. comfort
+Scorer --> TripMgr : Return ranked alternatives (to M3)
+
+@enduml

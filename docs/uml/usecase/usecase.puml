@@ -1,0 +1,47 @@
+@startuml
+!include docs/uml/theme.puml
+title ShadeNav v0 Use Case Diagram
+left to right direction
+
+' ========= Main Actors =========
+actor "Worker" as Worker
+actor "Parent\n(with kids)" as Parent
+actor "Courier\nby foot" as Courier
+actor "Tourist" as Tourist
+
+' ========= External Actors =========
+actor "Map \nServices" as Tiles
+actor "Meteo \nSources" as WX
+actor "Local \nOpen Data" as OD
+
+' ========= Use Cases =========
+' ---- Business-level use cases (keep it simple) ----
+usecase "UC1: Commute to Work\n(less heat fatigue, minimal detours)" as UC1
+usecase "UC2: Evening Walk to Park\n(shade + nearby water points)" as UC2
+usecase "UC3: Foot Deliveries\n(multiple stops, compare fastest vs freshest)" as UC3
+usecase "UC4: Tourist Stroll\n(keep planned route, reduce exposure)" as UC4
+
+' ========= Associations (personas -> business UCs) =========
+Worker  --> UC1
+Parent  --> UC2
+Courier --> UC3
+Tourist --> UC4
+
+' ========= External actors interact with shared UC =========
+UC1 <-- Tiles
+UC1 <-- WX
+UC1 <-- OD
+
+UC2 <-- Tiles
+UC2 <-- WX
+UC2 <-- OD
+
+UC3 <-- Tiles
+UC3 <-- WX
+UC3 <-- OD
+
+UC4 <-- Tiles
+UC4 <-- WX
+UC4 <-- OD
+
+@enduml

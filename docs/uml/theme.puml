@@ -1,0 +1,47 @@
+@startuml
+skinparam actor {
+  actorStyle awesome
+  BackgroundColor #e7f6f5ff
+  BorderColor black
+  FontColor black
+}
+skinparam participant {
+  BackgroundColor #E0F2F1
+  BorderColor black
+  FontColor black
+  RoundCorner 0
+}
+skinparam usecase {
+  BackgroundColor #96c7ebff
+  BorderColor #336699
+  ArrowColor #336699
+}
+skinparam component {
+  BackgroundColor #E0F2F1
+  BorderColor black
+  FontColor black
+  RoundCorner 0
+}
+skinparam state {
+  BackgroundColor #E0F2F1
+  BorderColor black
+  FontColor black
+  RoundCorner 0
+}
+skinparam activity {
+  BackgroundColor #E0F2F1
+  BorderColor black
+  FontColor black
+  ArrowColor black
+  FontSize 12
+  RoundCorner 0
+}
+skinparam decision_diamond {
+  BackgroundColor #EEEEEE
+  BorderColor black
+}
+skinparam note {
+  BackgroundColor #FEFBEA
+  BorderColor #CC9900
+}
+@enduml

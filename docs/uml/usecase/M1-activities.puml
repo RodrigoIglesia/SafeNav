@@ -1,0 +1,27 @@
+@startuml
+
+!include docs/uml/theme.puml
+
+actor User
+participant "ShadeNav UI" as UI
+participant "Trip Manager" as TripMgr
+
+== Start trip definition ==
+
+User -> UI : Open ShadeNav
+User -> UI : Select “Plan Route”
+
+alt Single destination (A→B)
+    User -> UI : Enter origin and destination
+else Multi-stop
+    User -> UI : Enter list of stops
+end
+
+User -> UI : Confirm trip
+
+== Process trip internally ==
+
+UI -> TripMgr : Validate trip data
+TripMgr -> TripMgr : Create trip object (to M2)
+
+@enduml
