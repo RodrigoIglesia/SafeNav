@@ -17,10 +17,22 @@ skinparam usecase {
   ArrowColor #336699
 }
 skinparam component {
+  FontSize 18
+  FontStyle bold
+  Padding 35
+  Margin 40
   BackgroundColor #E0F2F1
   BorderColor black
   FontColor black
   RoundCorner 0
+}
+skinparam package {
+  BorderColor black
+  FontColor black
+  FontSize 16
+  FontStyle bold
+  Padding 25
+  Margin 30
 }
 skinparam state {
   BackgroundColor #E0F2F1

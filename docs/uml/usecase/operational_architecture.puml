@@ -1,62 +1,82 @@
 @startuml
-
 !include docs/uml/theme.puml
+title ShadeNav Operational Architecture
 left to right direction
 skinparam linetype ortho
+skinparam packageStyle rectangle
+
 ' === External Actors ===
-actor "User\n(Worker/Courier/Tourist)" as User
-package "External Data Sources" {
-  left to right direction
-  actor "Map Services" as MapAPI
-  actor "Meteo Sources" as Meteo
-  actor "Local Open Data" as OpenData
+package "User" {
+  actor "Young Pedestrian" as YoungPedestrian
+  actor "Worker" as Worker
+  actor "Parent\n(with kids)" as Parent
+  actor "Courier\nby foot" as Courier
+  actor "Tourist" as Tourist
 }
-actor "Map Services" as MapAPI
-actor "Meteo Sources" as Meteo
-actor "Local Open Data" as OpenData
+
+package "External Data Sources" {
+  entity "Map Services" as MapAPI
+  entity "Meteo Sources" as Meteo
+  entity "Local Open Data" as OpenData
+}
 
 ' === System Components ===
 package "SafeNav System" {
-
-  component "SafeNav UI" as UI
-  component "Trip Manager" as TripMgr
+  component "UI Layer" as UI
   component "Routing Engine" as Router
-  component "Comfort Scorer" as Scorer
-  component "Environmental Context" as Context
-
+  component "Context Analyzer" as Analyzer
 }
 
-' === Actor to Component Interactions ===
-User --> UI : defines trip,\nviews results
-MapAPI --> Context : tiles, streets
-Meteo --> Context : temperature,\ncloud cover
-OpenData --> Context : trees,\nbuildings,\nwater
+' === Layout hints ===
+' Keep data sources on the far right
+' SafeNav System center
+' User on far left
+' (Use long arrows to show cross-package flow)
 
-' === Internal Component Relationships ===
-UI --> TripMgr : trip input
-TripMgr --> Context : request environment
-TripMgr --> Router : get routes
-TripMgr --> Scorer : score routes
+' === 1. User Interaction ===
+User --> UI : Route request
+User <.. UI : Route alternatives in map and scores
 
-Router --> Context : shade, terrain
-Scorer --> Context : heat, water data
+' === 2. Internal data and preferences ===
+UI -r-> Router : Route start/end points
+UI --> Analyzer : User preferences
+
+' === 3. Route Computation ===
+Router --> Analyzer : Possible routes (ETA + distance)
+
+' === 4. External Data Retrieval ===
+Router --> MapAPI : Request map
+Router <.. MapAPI : Return map
+
+Analyzer --> Meteo : Request weather data
+Analyzer <.. Meteo : Return weather data
+
+Analyzer --> OpenData : Request streets data
+Analyzer <.. OpenData : Return streets data
+
+Analyzer --> UI : Routes + Route scores
 
 
-note bottom of UI
+' === UI Note ===
+note left of UI
 Handles all user interactions:
-• Trip definition (origin/destination)
+• Trip definition (origin / destination)
 • Display of route alternatives
 • Route selection and guidance
 UI may be web or mobile.
 end note
 
-note bottom of TripMgr
-Core orchestrator for trip planning:
-• Validates trip input
-• Triggers environmental/context update
-• Coordinates routing and scoring
-• Prepares results for the UI
+note bottom of Router
+Responsible for computing possible
+routes between origin and destination
+using map data.
 end note
 
+note top of Analyzer
+Analyzes routes based on
+environmental context (shade,
+weather) and user preferences
+to score and rank alternatives.
+end note
 
 @enduml

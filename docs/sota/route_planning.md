@@ -38,32 +38,28 @@ Dijkstra
 ## Limitaciones
 Sistemas actuales no consideran factores ambientales
 
-## Enfoques que incorporan factores adicionales
-### Rutas seguras contra criminalidad
-### Rutas saludables
-Contaminación del aire.
+## Fuentes de datos
+### Open Street Maps
+API para obtener datos: https://overpass-turbo.eu/
 
-“walkability”, “urban comfort routing”, “shade-aware navigation”
-
-## Datos y fuentes utilizados
 
 ## Algoritmos de planificación inteligentes
 
 
 ## Referencias
-1. Dijkstra, E. W. (1959). A note on two problems in connexion with graphs.
+[1] Dijkstra, E. W. (1959). A note on two problems in connexion with graphs.
 
-2. Hart, P. E., Nilsson, N. J., & Raphael, B. (1968). A Formal Basis for the Heuristic Determination of Minimum Cost Paths.
+[2] Hart, P. E., Nilsson, N. J., & Raphael, B. (1968). A Formal Basis for the Heuristic Determination of Minimum Cost Paths.
 
-3. Bellman, R. (1958). On a routing problem.
+[3] Bellman, R. (1958). On a routing problem.
 Dijkstra, E. W. (1959). A note on two problems in connexion with graphs. Numerische Mathematik, 1, 269–271.
 
-4. Delling, D., Pajor, T., Sanders, P., & Wagner, D. (2009). Engineering Route Planning Algorithms. In Algorithmics of Large and Complex Networks (pp. 117–139). Springer.
+[4] Delling, D., Pajor, T., Sanders, P., & Wagner, D. (2009). Engineering Route Planning Algorithms. In Algorithmics of Large and Complex Networks (pp. 117–139). Springer.
 
-5. Bast, H., Delling, D., Goldberg, A., Müller-Hannemann, M., Pajor, T., Sanders, P., Wagner, D., & Werneck, R. F. (2016). Route Planning in Transportation Networks. In Algorithm Engineering: Selected Results and Surveys (pp. 19–80). Springer.
+[5] Bast, H., Delling, D., Goldberg, A., Müller-Hannemann, M., Pajor, T., Sanders, P., Wagner, D., & Werneck, R. F. (2016). Route Planning in Transportation Networks. In Algorithm Engineering: Selected Results and Surveys (pp. 19–80). Springer.
 
-6. Zheng, Y., Capra, L., Wolfson, O., & Yang, H. (2014). Urban Computing: Concepts, Methodologies, and Applications. ACM Transactions on Intelligent Systems and Technology (TIST), 5(3), 38.
+[6] Zheng, Y., Capra, L., Wolfson, O., & Yang, H. (2014). Urban Computing: Concepts, Methodologies, and Applications. ACM Transactions on Intelligent Systems and Technology (TIST), 5(3), 38.
 
-7. Geisberger, R., Sanders, P., Schultes, D., & Delling, D. (2008). Contraction Hierarchies: Faster and Simpler Hierarchical Routing in Road Networks.
+[7] Geisberger, R., Sanders, P., Schultes, D., & Delling, D. (2008). Contraction Hierarchies: Faster and Simpler Hierarchical Routing in Road Networks.
 
-8. Bast, H., Delling, D., Goldberg, A., Müller-Hannemann, M., Pajor, T., Sanders, P., Wagner, D., & Werneck, R. F. (2016). Route Planning in Transportation Networks. Algorithm Engineering.
+[8] Bast, H., Delling, D., Goldberg, A., Müller-Hannemann, M., Pajor, T., Sanders, P., Wagner, D., & Werneck, R. F. (2016). Route Planning in Transportation Networks. Algorithm Engineering.

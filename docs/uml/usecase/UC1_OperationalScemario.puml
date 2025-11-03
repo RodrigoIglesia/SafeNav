@@ -1,0 +1,31 @@
+' This diagram is intended to illustrate the processes carried out by a user and the system to achieve the "Safe Return to Home" use case.
+' In the 'Safe Return to Home' use case, the user requests a safe route home, and the system computes and provides a recommended route based on real-time context data.
+
+@startuml
+    actor       "User" as User
+    participant "User Interface" as UI
+    participant "Routing Module" as Router
+    participant "Analysis Module" as Analyzer
+    participant "Meteo Data Source" as Meteo
+    participant "Open Data Source" as OpenData
+    participant "Map Source" as MapAPI
+
+    User --> UI : Go Home request
+    UI --> Router : Send current location and home destination
+    UI --> Analyzer : Send comfortn and safety preferences
+
+    Router --> MapAPI : Request street network and map tiles
+    Router <-- MapAPI : Return street network and map tiles
+
+    Router --> Analyzer : Send route options to eveluate
+
+    Analyzer --> Meteo : Request current conditions + alerts
+    Meteo --> Analyzer : Return temperature + warnings
+
+    Analyzer --> OpenData : Request shade zones + POIs
+    OpenData --> Analyzer : Return shaded areas, safe zones, water points
+
+    Analyzer --> UI : Return comfort/safety scores per route
+
+    UI --> User : Display routes wiht "Safe rating" scores
+@enduml
