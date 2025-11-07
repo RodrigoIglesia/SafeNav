@@ -19,9 +19,4 @@ end
 
 User -> UI : Confirm trip
 
-== Process trip internally ==
-
-UI -> TripMgr : Validate trip data
-TripMgr -> TripMgr : Create trip object (to M2)
-
 @enduml
