@@ -36,7 +36,7 @@ El sistema SafeNav v1.0 se compone de los siguientes componentes internos:
 | **C4** | **Data Management (DM)** | Capa de gestión e integración de datos. Se encarga de conectar el sistema con las fuentes externas (MapAPI, MeteoAPI, OpenDataAPI), procesar los datos y entregarlos a los componentes internos. | - Obtener y actualizar datos externos (mapas, clima, datos urbanos)<br>- Preprocesar, normalizar y cachear datos<br>- Proveer datos consistentes al RE y CA<br>- Gestionar privacidad y almacenamiento temporal | Peticiones de datos (desde RE y CA) | Datos preparados (mapas, clima, contexto urbano) | I5, I6, E1, E2, E3 |
 ---
 
-# 3. Especificación de funcionalidades
+# 3. Especificación de
 En este capítulo se listan las funcionalidades llevadas a cabo por el sistema.
 
 | ID | Funcionalidad | Descripción |
