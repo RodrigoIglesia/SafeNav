@@ -1,56 +1,37 @@
 @startuml
-left to right direction
+!include docs/uml/theme.puml
 skinparam linetype ortho
-skinparam packageStyle rectangle
-skinparam componentStyle rectangle
-skinparam shadowing false
-
+skinparam defaultTextAlignment center
 
 ' === SafeNav System ===
-rectangle "SafeNav System" as SafeNav {
-  
+package "SafeNav System" as SafeNav {
+
   component "User Interface\n(UI)" as UI
   component "Routing Engine\n(RE)" as RE
   component "Context Analyzer\n(CA)" as CA
   component "Data Management\n(DM)" as DM
-  
-  ' Internal Interfaces
-  UI --> RE : I1
-  RE --> UI : I2: Route results
-  RE --> CA : I3: Route candidates
-  CA --> RE : I4: Route scores
+
+  ' === Internal Interfaces ===
+  UI --> RE : I1: Route request
+  RE --> UI : I2: Route candidates to show -- User selects the route
+  RE --> CA : I3: Route candidates for evaluation
+  CA --> UI : I4: Scored routes
   CA --> DM : I5: Context data request
-  RE --> DM : I6: Map data request
+  RE --> DM : I6: Map data request  
   UI --> CA : I7: Alerts/Context (optional)
 }
 
 ' === External Systems ===
+' Place them vertically aligned with DM for clarity
 package "External Data Sources" {
   [Map Services\n(MapAPI)] as MapAPI
   [Meteo Sources\n(MeteoAPI)] as MeteoAPI
   [Local Open Data\n(OpenDataAPI)] as OpenDataAPI
 }
 
-' External Interfaces
-DM --> MapAPI : E1: Map data
-DM --> MeteoAPI : E2: Weather data
-DM --> OpenDataAPI : E3: Urban open data
-
-' === Visual notes ===
-note right of CA
-Evaluates routes using weather and open data.\nComputes safety/comfort scores.
-end note
-
-note bottom of DM
-Integrates and preprocesses data from external APIs.\nProvides consistent datasets to RE and CA.
-end note
-
-note left of RE
-Generates and optimizes route candidates\nbased on map and context data.
-end note
-
-note left of UI
-Handles user interactions:\n• Route requests\n• Visualization\n• Alerts
-end note
+' === External Interfaces ===
+MapAPI --> DM : E1: Map data
+MeteoAPI --> DM : E2: Weather data
+OpenDataAPI --> DM : E3: Urban open data
 
 @enduml
