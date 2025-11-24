@@ -1,0 +1,94 @@
+@startuml
+!include docs/uml/theme.puml
+title SafeNav v1 — Logical Interfaces Architecture
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam defaultFontSize 12
+skinparam ArrowFontSize 11
+skinparam nodesep 80
+skinparam ranksep 120
+
+left to right direction
+
+' === External UI (Client) ===
+component "User Interface\n(Web / Mobile / CLI)" as UI
+interface "I_HTTP_Routes" as IHTTP
+UI -- IHTTP : HTTP/JSON
+
+' === SafeNav Core ===
+component "SafeNav Core" as Core {
+  component "API Layer\n(HTTP Controller)" as API
+  API - IHTTP
+
+  component "Routing Engine\n(RE)" as RE
+  interface "I_RoutingService" as IRoute
+  RE - IRoute
+
+  component "Context Analyzer\n(CA)" as CA
+  interface "I_ContextService" as IContext
+  CA - IContext
+
+  component "Data Management\n(DM)" as DM
+  interface "I_DataAccess" as IData
+  DM - IData
+
+  ' === Internal dependencies ===
+  API --> IRoute : uses
+  RE  --> IContext : uses
+  RE  --> IData : uses
+  CA  --> IData : uses
+}
+
+' === External Data Sources ===
+package "External Data Sources" {
+  top to bottom direction
+  component "Map Services\n(MapAPI)" <<external>> as MapAPI
+  component "Meteo Sources\n(MeteoAPI)" <<external>> as MeteoAPI
+  component "Local Open Data\n(OpenDataAPI)" <<external>> as OpenDataAPI
+}
+
+' === External interfaces implemented by DM ===
+interface "I_MapDataAccess"   <<external>> as IMapData
+interface "I_MeteoDataAccess" <<external>> as IMeteoData
+interface "I_OpenDataAccess"  <<external>> as IOpenData
+
+DM - IMapData
+DM - IMeteoData
+DM - IOpenData
+
+IMapData -- MapAPI : E1: Map data
+IMeteoData -- MeteoAPI : E2: Weather data
+IOpenData -- OpenDataAPI : E3: Urban data
+
+' === Components Layout ===
+UI -[hidden]- IHTTP
+IHTTP -[hidden]- Core
+API -[hidden]- IRoute
+IRoute -[hidden]- RE
+RE -[hidden]- IContext
+IContext -[hidden]- CA
+CA -[hidden]- IData
+IData -[hidden]- IMapData
+IData -[hidden]- IMeteoData
+IData -[hidden]- IOpenData
+
+
+' === Interface Definition Boxes ===
+rectangle "«interface» I_HTTP_Routes\n---\n• routeRequest(origin, destination, preferences)\n• getRouteResults(requestId)\nFormat: HTTP/JSON" as D_IHTTP #LightGray
+rectangle "«interface» I_RoutingService\n---\n• calculateRoutes(request)\n• getRouteById(id)\nFormat: Internal call / object exchange" as D_IRoute #LightGray
+rectangle "«interface» I_ContextService\n---\n• evaluateRoute(route)\n• getScore(routeId)\nFormat: Internal call / context model" as D_IContext #LightGray
+rectangle "«interface» I_DataAccess\n---\n• getMapData(area)\n• getWeatherData(timestamp)\n• getUrbanData(area)\nFormat: Internal model / cached data" as D_IData #LightGray
+rectangle "«interface» I_MapDataAccess\n---\n• fetchMapData(area)\nFormat: External API (MapAPI)" as D_IMapData #LightGray
+rectangle "«interface» I_MeteoDataAccess\n---\n• fetchWeatherData(timestamp)\nFormat: External API (MeteoAPI)" as D_IMeteoData #LightGray
+rectangle "«interface» I_OpenDataAccess\n---\n• fetchUrbanData(area)\nFormat: External API (OpenDataAPI)" as D_IOpenData #LightGray
+
+IHTTP       .right. D_IHTTP
+IRoute      .right. D_IRoute
+IContext    .right. D_IContext
+IData       .right. D_IData
+IMapData    .right. D_IMapData
+IMeteoData  .right. D_IMeteoData
+IOpenData   .right. D_IOpenData
+
+@enduml

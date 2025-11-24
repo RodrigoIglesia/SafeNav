@@ -1,0 +1,58 @@
+@startuml
+!include docs/uml/theme.puml
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam shadowing false
+skinparam ArrowFontSize 10
+skinparam ComponentFontSize 12
+skinparam PackageFontSize 11
+skinparam PackagePadding 25
+skinparam nodesep 80
+skinparam ranksep 100
+
+' === User Interface (vertical layout) ===
+component "User Interface" as UI_Pkg {
+  top to bottom direction
+  component "User Interface\n(Web / Mobile / CLI)" as UI
+}
+
+' === SafeNav Core (horizontal layout) ===
+component "SafeNav Core" as Core {
+  component "API Layer\n(HTTP Controller)" as API
+  component "Routing Engine\n(RE)" as RE
+  component "Context Analyzer\n(CA)" as CA
+  component "        Data Management (DM)       " as DM
+
+  ' === Internal Interfaces ===
+  API -down-> RE : I2: Route request
+  RE -up-> API : I3: Route results
+  RE -right-> CA : I4: Route candidates
+  CA -left-> RE : I5: Scored routes
+  CA -down-> DM : I6: Context data request
+  DM .up.> CA : I6: Context data response
+  RE -down-> DM : I7: Map data request
+  DM .up.> RE : I7: Map data response
+}
+
+' === Connection between UI and Core ===
+UI --> API : I1: HTTP request\n(Route request)
+API --> UI : I1: HTTP response\n(Route results and alerts)
+
+' === External Data Sources (vertical layout) ===
+package "External Data Sources" {
+  top to bottom direction
+  component "Map Services\n(MapAPI)"         <<external>> as MapAPI
+  component "Meteo Sources\n(MeteoAPI)"      <<external>> as Meteo
+  component "Local Open Data\n(OpenDataAPI)" <<external>> as OpenData
+}
+
+' === External Interfaces ===
+DM --> MapAPI : E1: Map data requests
+MapAPI ..> DM : E1: Map data responses
+DM --> Meteo : E2: Weather data requests
+Meteo ..> DM : E2: Weather data responses
+DM --> OpenData : E3: Urban open data requests
+OpenData ..> DM : E3: Urban data responses
+
+
+@enduml

@@ -1,37 +1,31 @@
 @startuml
 !include docs/uml/theme.puml
 skinparam linetype ortho
+skinparam shadowing false
 skinparam defaultTextAlignment center
+skinparam defaultFontSize 12
+skinparam ArrowFontSize 11
+skinparam nodesep 100
+skinparam ranksep 120
 
-' === SafeNav System ===
-package "SafeNav System" as SafeNav {
-
-  component "User Interface\n(UI)" as UI
-  component "Routing Engine\n(RE)" as RE
-  component "Context Analyzer\n(CA)" as CA
-  component "Data Management\n(DM)" as DM
-
-  ' === Internal Interfaces ===
-  UI --> RE : I1: Route request
-  RE --> UI : I2: Route candidates to show -- User selects the route
-  RE --> CA : I3: Route candidates for evaluation
-  CA --> UI : I4: Scored routes
-  CA --> DM : I5: Context data request
-  RE --> DM : I6: Map data request  
-  UI --> CA : I7: Alerts/Context (optional)
+' === Subsystems ===
+component "SafeNav System" as SafeNav {
+  component "User Interface Subsystem" as UI
+  component "SafeNav Backend Subsystem" as CoreSystem
 }
 
-' === External Systems ===
-' Place them vertically aligned with DM for clarity
-package "External Data Sources" {
-  [Map Services\n(MapAPI)] as MapAPI
-  [Meteo Sources\n(MeteoAPI)] as MeteoAPI
-  [Local Open Data\n(OpenDataAPI)] as OpenDataAPI
+package "External Data Sources" as External {
+  component "Map Services\n(MapAPI)" <<external>> as MapAPI
+  component "Meteo Sources\n(MeteoAPI)" <<external>> as MeteoAPI
+  component "Local Open Data\n(OpenDataAPI)" <<external>> as OpenDataAPI
 }
 
-' === External Interfaces ===
-MapAPI --> DM : E1: Map data
-MeteoAPI --> DM : E2: Weather data
-OpenDataAPI --> DM : E3: Urban open data
+' === Interactions ===
+UI --> CoreSystem : HTTP/REST API\n(Route requests & results)
+CoreSystem --> UI : Responses (routes, alerts, scores)
+
+CoreSystem --> [MapAPI] : Map & street data
+CoreSystem --> [MeteoAPI] : Weather data
+CoreSystem --> [OpenDataAPI] : Urban & POI data
 
 @enduml

@@ -22,6 +22,7 @@ skinparam component {
   Padding 35
   Margin 40
   BackgroundColor #E0F2F1
+  BackgroundColor<<external>> #e0f2e5ff
   BorderColor black
   FontColor black
   RoundCorner 0
@@ -55,5 +56,15 @@ skinparam decision_diamond {
 skinparam note {
   BackgroundColor #FEFBEA
   BorderColor #CC9900
+}
+skinparam interface {
+  BackgroundColor #FFFFFF
+  BorderColor #1E88E5
+  FontColor #1E88E5
+  ArrowColor #1E88E5
+
+  BorderColor<<external>> #1ee581ff
+  FontColor<<external>> #1ee581ff
+  ArrowColor<<external>> #1ee581ff
 }
 @enduml
