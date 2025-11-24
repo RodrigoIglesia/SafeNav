@@ -18,20 +18,20 @@ component "User Interface" as UI_Pkg {
 
 ' === SafeNav Core (horizontal layout) ===
 component "SafeNav Core" as Core {
-  component "API Layer\n(HTTP Controller)" as API
+  component "API Layer (HTTP Controller)" as API
   component "Routing Engine\n(RE)" as RE
   component "Context Analyzer\n(CA)" as CA
   component "        Data Management (DM)       " as DM
 
   ' === Internal Interfaces ===
-  API -down-> RE : I2: Route request
-  RE -up-> API : I3: Route results
-  RE -right-> CA : I4: Route candidates
-  CA -left-> RE : I5: Scored routes
-  CA -down-> DM : I6: Context data request
-  DM .up.> CA : I6: Context data response
-  RE -down-> DM : I7: Map data request
-  DM .up.> RE : I7: Map data response
+  API -down-> RE :    Route request
+  RE .up.> API :      Route results
+  CA -up-> API :      Route scores
+  RE -right-> CA :    Route candidates
+  CA -down-> DM :     Context data request
+  DM .up.> CA :       Context data response
+  RE -down-> DM :     Map data request
+  DM .up.> RE :       Map data response
 }
 
 ' === Connection between UI and Core ===

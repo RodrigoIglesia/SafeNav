@@ -1,6 +1,5 @@
 @startuml
 !include docs/uml/theme.puml
-title SafeNav v1 — Logical Interfaces Architecture
 skinparam linetype ortho
 skinparam shadowing false
 skinparam defaultTextAlignment center
@@ -27,21 +26,21 @@ component "SafeNav Core" as Core {
 
   component "Context Analyzer\n(CA)" as CA
   interface "I_ContextService" as IContext
-  CA - IContext
+  API -- IContext : uses
+  IContext - CA
 
   component "Data Management\n(DM)" as DM
   interface "I_DataAccess" as IData
   DM - IData
 
   ' === Internal dependencies ===
-  API --> IRoute : uses
-  RE  --> IContext : uses
-  RE  --> IData : uses
-  CA  --> IData : uses
+  API -- IRoute : uses
+  RE  -- IData : uses
+  CA  -- IData : uses
 }
 
 ' === External Data Sources ===
-package "External Data Sources" {
+package "External Data Sources" as External {
   top to bottom direction
   component "Map Services\n(MapAPI)" <<external>> as MapAPI
   component "Meteo Sources\n(MeteoAPI)" <<external>> as MeteoAPI
@@ -62,16 +61,22 @@ IMeteoData -- MeteoAPI : E2: Weather data
 IOpenData -- OpenDataAPI : E3: Urban data
 
 ' === Components Layout ===
-UI -[hidden]- IHTTP
-IHTTP -[hidden]- Core
-API -[hidden]- IRoute
-IRoute -[hidden]- RE
-RE -[hidden]- IContext
-IContext -[hidden]- CA
-CA -[hidden]- IData
-IData -[hidden]- IMapData
-IData -[hidden]- IMeteoData
-IData -[hidden]- IOpenData
+
+UI        -[hidden]- IHTTP
+IHTTP     -[hidden]- API
+API       -[hidden]- IRoute
+IRoute    -[hidden]-  RE
+RE        -[hidden]left- CA
+RE        -[hidden]- IData
+CA        -[hidden]- IData
+IData     -[hidden]- DM
+DM        -[hidden]- IMapData
+DM        -[hidden]- IMeteoData
+DM        -[hidden]- IOpenData
+IMapData  -[hidden]- MapAPI
+IMapData  -[hidden]- MeteoAPI
+IMapData  -[hidden]- OpenDataAPI
+Core      -[hidden]- External
 
 
 ' === Interface Definition Boxes ===
@@ -83,12 +88,12 @@ rectangle "«interface» I_MapDataAccess\n---\n• fetchMapData(area)\nFormat: E
 rectangle "«interface» I_MeteoDataAccess\n---\n• fetchWeatherData(timestamp)\nFormat: External API (MeteoAPI)" as D_IMeteoData #LightGray
 rectangle "«interface» I_OpenDataAccess\n---\n• fetchUrbanData(area)\nFormat: External API (OpenDataAPI)" as D_IOpenData #LightGray
 
-IHTTP       .right. D_IHTTP
+IHTTP       .left. D_IHTTP
 IRoute      .right. D_IRoute
-IContext    .right. D_IContext
+IContext    .. D_IContext
 IData       .right. D_IData
 IMapData    .right. D_IMapData
 IMeteoData  .right. D_IMeteoData
-IOpenData   .right. D_IOpenData
+IOpenData   .left. D_IOpenData
 
 @enduml
