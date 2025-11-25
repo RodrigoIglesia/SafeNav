@@ -11,13 +11,13 @@ skinparam nodesep 80
 skinparam ranksep 100
 
 ' === User Interface (vertical layout) ===
-component "User Interface" as UI_Pkg {
+component "User Interface System" <<system>> as UISys {
   top to bottom direction
   component "User Interface\n(Web / Mobile / CLI)" as UI
 }
 
 ' === SafeNav Core (horizontal layout) ===
-component "SafeNav Core" as Core {
+component "SafeNav Core" <<system>> as Core {
   component "API Layer (HTTP Controller)" as API
   component "Routing Engine\n(RE)" as RE
   component "Context Analyzer\n(CA)" as CA

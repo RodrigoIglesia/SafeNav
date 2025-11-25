@@ -23,6 +23,7 @@ skinparam component {
   Margin 40
   BackgroundColor #E0F2F1
   BackgroundColor<<external>> #e0f2e5ff
+  BackgroundColor<<system>> #90f5adff
   BorderColor black
   FontColor black
   RoundCorner 0
@@ -57,14 +58,19 @@ skinparam note {
   BackgroundColor #FEFBEA
   BorderColor #CC9900
 }
-skinparam interface {
-  BackgroundColor #FFFFFF
-  BorderColor #1E88E5
-  FontColor #1E88E5
-  ArrowColor #1E88E5
+
+skinparam class {
+  BorderColor black
+  FontColor black
+  FontSize 12
+  RoundCorner 0
+  BorderColor<<internal>> #e5321eff
+  FontColor<<internal>> #e51e1eff
+  ArrowColor<<internal>> #e51e1eff
 
   BorderColor<<external>> #1ee581ff
   FontColor<<external>> #1ee581ff
   ArrowColor<<external>> #1ee581ff
 }
+
 @enduml

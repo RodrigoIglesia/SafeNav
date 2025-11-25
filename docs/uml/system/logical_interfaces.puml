@@ -7,93 +7,77 @@ skinparam defaultFontSize 12
 skinparam ArrowFontSize 11
 skinparam nodesep 80
 skinparam ranksep 120
+allowmixing
 
 left to right direction
 
+' ============================
+' COMPONENTS
+' ============================
+
 ' === External UI (Client) ===
-component "User Interface\n(Web / Mobile / CLI)" as UI
+component "User Interface System" <<system>> as UISys {
+  component "User Interface" as UI
+}
+
 interface "I_HTTP_Routes" as IHTTP
-UI -- IHTTP : HTTP/JSON
+IHTTP : + routeRequest(request : RouteRequest) : RouteResponse
+IHTTP : + getRouteResults(requestId : String) : RouteResponse
+UI -down- IHTTP : HTTP/JSON
 
 ' === SafeNav Core ===
-component "SafeNav Core" as Core {
+component "SafeNav Core" <<system>> as Core {
   component "API Layer\n(HTTP Controller)" as API
-  API - IHTTP
+  IHTTP -- API : uses
 
   component "Routing Engine\n(RE)" as RE
   interface "I_RoutingService" as IRoute
-  RE - IRoute
+  IRoute : + calculateRoutes(request : RouteRequest) : RouteCandidates
+  IRoute : + getRouteById(id : String) : RouteCandidate
+
+  API -- IRoute
+  IRoute -- RE : uses
 
   component "Context Analyzer\n(CA)" as CA
   interface "I_ContextService" as IContext
-  API -- IContext : uses
-  IContext - CA
+  IContext : + evaluateRoutes(routes : RouteCandidates) : RouteScores
+  IContext : + getRouteScore(routeId : String) : RouteScores
+  API -- IContext
+  IContext -- CA : uses
 
-  component "Data Management\n(DM)" as DM
+  component "Data Management (DM)" as DM
   interface "I_DataAccess" as IData
-  DM - IData
-
-  ' === Internal dependencies ===
-  API -- IRoute : uses
+  IData : + getMapData(area : Area) : MapData
+  IData : + getWeatherData(time : DateTime) : WeatherData
+  IData : + getUrbanData(area : Area) : UrbanData
   RE  -- IData : uses
   CA  -- IData : uses
+  IData -- DM
+  
 }
 
 ' === External Data Sources ===
 package "External Data Sources" as External {
   top to bottom direction
-  component "Map Services\n(MapAPI)" <<external>> as MapAPI
-  component "Meteo Sources\n(MeteoAPI)" <<external>> as MeteoAPI
-  component "Local Open Data\n(OpenDataAPI)" <<external>> as OpenDataAPI
+  component "Map Services (MapAPI)" <<external>> as MapAPI
+  component "Meteo Sources (MeteoAPI)" <<external>> as MeteoAPI
+  component "Local Open Data (OpenDataAPI)" <<external>> as OpenDataAPI
 }
 
 ' === External interfaces implemented by DM ===
-interface "I_MapDataAccess"   <<external>> as IMapData
-interface "I_MeteoDataAccess" <<external>> as IMeteoData
-interface "I_OpenDataAccess"  <<external>> as IOpenData
+interface "I_MapDataAccess" as IMapData
+IMapData : + fetchMapData(area : Area) : MapDataResponse
+interface "I_MeteoDataAccess" as IMeteoData
+IMeteoData : + fetchWeatherData(area : Area, time : DateTime) : WeatherResponse
+interface "I_OpenDataAccess"  as IOpenData
+IOpenData : + fetchUrbanData(area : Area, dataType : String) : OpenDataResponse
 
-DM - IMapData
-DM - IMeteoData
-DM - IOpenData
+DM -- IMapData : uses
+DM -- IMeteoData : uses
+DM -- IOpenData : uses
 
 IMapData -- MapAPI : E1: Map data
 IMeteoData -- MeteoAPI : E2: Weather data
 IOpenData -- OpenDataAPI : E3: Urban data
-
-' === Components Layout ===
-
-UI        -[hidden]- IHTTP
-IHTTP     -[hidden]- API
-API       -[hidden]- IRoute
-IRoute    -[hidden]-  RE
-RE        -[hidden]left- CA
-RE        -[hidden]- IData
-CA        -[hidden]- IData
-IData     -[hidden]- DM
-DM        -[hidden]- IMapData
-DM        -[hidden]- IMeteoData
-DM        -[hidden]- IOpenData
-IMapData  -[hidden]- MapAPI
-IMapData  -[hidden]- MeteoAPI
-IMapData  -[hidden]- OpenDataAPI
-Core      -[hidden]- External
-
-
-' === Interface Definition Boxes ===
-rectangle "«interface» I_HTTP_Routes\n---\n• routeRequest(origin, destination, preferences)\n• getRouteResults(requestId)\nFormat: HTTP/JSON" as D_IHTTP #LightGray
-rectangle "«interface» I_RoutingService\n---\n• calculateRoutes(request)\n• getRouteById(id)\nFormat: Internal call / object exchange" as D_IRoute #LightGray
-rectangle "«interface» I_ContextService\n---\n• evaluateRoute(route)\n• getScore(routeId)\nFormat: Internal call / context model" as D_IContext #LightGray
-rectangle "«interface» I_DataAccess\n---\n• getMapData(area)\n• getWeatherData(timestamp)\n• getUrbanData(area)\nFormat: Internal model / cached data" as D_IData #LightGray
-rectangle "«interface» I_MapDataAccess\n---\n• fetchMapData(area)\nFormat: External API (MapAPI)" as D_IMapData #LightGray
-rectangle "«interface» I_MeteoDataAccess\n---\n• fetchWeatherData(timestamp)\nFormat: External API (MeteoAPI)" as D_IMeteoData #LightGray
-rectangle "«interface» I_OpenDataAccess\n---\n• fetchUrbanData(area)\nFormat: External API (OpenDataAPI)" as D_IOpenData #LightGray
-
-IHTTP       .left. D_IHTTP
-IRoute      .right. D_IRoute
-IContext    .. D_IContext
-IData       .right. D_IData
-IMapData    .right. D_IMapData
-IMeteoData  .right. D_IMeteoData
-IOpenData   .left. D_IOpenData
 
 @enduml

@@ -68,33 +68,51 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 ---
 
 # 3. Especificación de Interfaces
-
-## Especificación de Interfaces Externas
 [ ] TBD: Analizar fuentes externas de datos y definir el modelo de datos
 
-En esta sección se describen las **interfaces externas** entre el sistema y sistemas externos.
+## Interfaces Internas (SafeNav Core)
 
-| ID | Fuente → Destino | Descripción | Datos Principales Intercambiados |
-|----|------------------|-------------|----------------------------------|
-| **E1 – Interfaz de Datos Cartográficos** | **DM → MapAPI** | Solicita y obtiene información de calles, geometrías y capas de mapa necesarias para el cálculo de rutas. | `MapDataRequest` { área, nivel_zoom } → `MapDataResponse` { red_vial, polígonos, metadata } |
-| **E2 – Interfaz de Datos Meteorológicos** | **DM → MeteoAPI** | Recupera condiciones climáticas actuales, temperatura, radiación solar y alertas. | `WeatherRequest` { área, hora_actual } → `WeatherResponse` { temperatura, UV, alerta } |
-| **E3 – Interfaz de Datos Abiertos Urbanos** | **DM → OpenDataAPI** | Solicita datos urbanos relevantes: zonas de sombra, árboles, fuentes, mobiliario urbano, etc. | `OpenDataRequest` { área, tipo_dato } → `OpenDataResponse` { puntos_sombra, fuentes, parques } |
+| ID | Nombre de Interfaz | Descripción | Datos Principales |
+|----|--------------------|-------------|-------------------|
+| **I_HTTP_Routes** | Interfaz HTTP de Rutas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar rutas, consultar resultados y recibir puntuaciones o alertas. | `RouteRequest`, `RouteResponse` |
+| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `RouteRequest`, `RouteCandidates` |
+| **I_ContextService** | Servicio de Evaluación Contextual | Evalúa las rutas según factores ambientales (temperatura, sombra, alertas) y devuelve puntuaciones agregadas de confort y seguridad. | `RouteCandidates`, `RouteScores` |
+| **I_DataAccess** | Acceso a Datos Internos | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `MapData`, `WeatherData`, `UrbanData` |
 ---
 
+## Interfaces Externas (Fuentes de Datos)
 
-## Especificación de Interfaces Internas
-En esta sección se describen las **interfaces internas** entre los componentes del sistema.  
+| ID | Nombre de Interfaz | Descripción | Datos Principales |
+|----|--------------------|-------------|-------------------|
+| **I_MapDataAccess** | Interfaz de Datos Cartográficos | Canal de comunicación con el servicio externo de mapas para obtener red vial, geometrías y capas base. | `MapDataRequest`, `MapDataResponse` |
+| **I_MeteoDataAccess** | Interfaz de Datos Meteorológicos | Permite recuperar condiciones meteorológicas actuales, temperatura, radiación UV y alertas climáticas. | `WeatherRequest`, `WeatherResponse` |
+| **I_OpenDataAccess** | Interfaz de Datos Abiertos Urbanos | Solicita datos abiertos municipales: zonas de sombra, árboles, fuentes, parques y puntos de interés urbano. | `OpenDataRequest`, `OpenDataResponse` |
+---
 
+## 5.3 Relación entre Componentes e Interfaces
 
-| ID | Fuente → Destino | Descripción | Datos Principales Intercambiados |
-|----|------------------|-------------|----------------------------------|
-| **I1 – Interfaz de Solicitud de Ruta** | **UI → RE** | Transfiere la solicitud de navegación del usuario, incluyendo origen, destino y preferencias (comodidad, tiempo, evitar calor, etc.). | `RouteRequest` { origen, destino, preferencias } |
-| **I2 – Interfaz de Visualización de Ruta** | **RE → UI** | Envía las rutas calculadas (con sus puntuaciones y metadatos) al componente UI para su visualización y selección por el usuario. | `RouteSet` { geometría, ETA, distancia, puntuación, alertas } |
-| **I3 – Interfaz de Evaluación de Rutas** | **RE → CA** | Proporciona una lista de rutas candidatas para su evaluación contextual (seguridad, sombra, confort). | `RouteCandidates` { route_id, geometría, ETA, distancia } |
-| **I4 – Interfaz de Puntuación de Rutas** | **CA → UI** | Devuelve las rutas (o segmentos) con sus valores de seguridad y confort. | `RouteScores` { route_id, comfort_score, segment_scores } |
-| **I5 – Interfaz de Acceso a Datos Contextuales** | **CA → DM** | Solicita datos ambientales procesados (clima, sombra, puntos de interés) para apoyar la evaluación de contexto. | `ContextData` { temperatura, alertas, zonas_sombra, POIs } |
-| **I6 – Interfaz de Datos Cartográficos** | **RE → DM** | Solicita datos de mapas o topología vial preprocesados o en caché necesarios para la generación de rutas. | `MapData` { grafo_vial, metadatos, info_tiles } |
-| **I7 – Interfaz de Estado y Alertas** *(opcional)* | **UI ↔ CA** | Permite que el UI consulte condiciones ambientales actuales o alertas antes de calcular rutas (p. ej., “alerta de calor activa”). | `ContextSummary` { temperatura, nivel_alerta } |
+| Componente | Interfaces Implementadas | Interfaces Utilizadas |
+|-------------|--------------------------|------------------------|
+| **User Interface (UI)** | — | `I_HTTP_Routes` |
+| **API Layer** | `I_HTTP_Routes` | `I_RoutingService`, `I_ContextService` |
+| **Routing Engine (RE)** | `I_RoutingService` | `I_DataAccess` |
+| **Context Analyzer (CA)** | `I_ContextService` | `I_DataAccess` |
+| **Data Management (DM)** | `I_DataAccess`, `I_MapDataAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |
+
+---
+
+## 5.4 Descripción de Datos Principales
+
+| Tipo de Dato | Descripción | Campos Relevantes |
+|---------------|--------------|-------------------|
+| **RouteRequest** | Solicitud de cálculo de ruta enviada por el usuario. | `origin: GeoPoint`, `destination: GeoPoint`, `preferences: RoutePreferences` |
+| **RouteResponse** | Respuesta de rutas con puntuaciones y metadatos. | `routes: [RouteCandidate]`, `metadata: ResponseMetadata` |
+| **RouteCandidates** | Conjunto de rutas candidatas generadas por el motor de rutas. | `route_id`, `geometry`, `eta`, `distance` |
+| **RouteScores** | Puntuaciones de seguridad y confort asignadas por el analizador contextual. | `comfort_score`, `safety_score`, `segment_scores` |
+| **MapData** | Datos cartográficos estructurados internos. | `road_graph`, `tiles`, `metadata` |
+| **WeatherData** | Datos meteorológicos procesados. | `temperature`, `uv_index`, `alert_level` |
+| **UrbanData** | Datos urbanos relevantes para confort y seguridad. | `shadow_zones`, `water_points`, `POIs` |
+
 ---
 
 
