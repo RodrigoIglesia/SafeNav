@@ -115,5 +115,6 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 
 ---
 
+![alt text](DTO_class_diagram.png)
 
 

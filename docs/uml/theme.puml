@@ -19,7 +19,7 @@ skinparam usecase {
 skinparam component {
   FontSize 18
   FontStyle bold
-  Padding 35
+  Padding 60 30
   Margin 40
   BackgroundColor #E0F2F1
   BackgroundColor<<external>> #e0f2e5ff
@@ -60,6 +60,7 @@ skinparam note {
 }
 
 skinparam class {
+  classAttributeIconSize 0
   BorderColor black
   FontColor black
   FontSize 12
