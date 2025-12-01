@@ -1,4 +1,14 @@
-This is the repository for the CORE subsystem of SafeNav.
+Este es el repositorio del subsistema CORE de SafeNav.
+
+## Configuración técnica
+- Lenguaje de programación: Python3.12
+- Entorno de ejecución
+    - Docker
+    - Python 3.12-slim (Ubuntu)
+- Frameworks
+    - API: FastAPI
+
+
 The repository is composed of
 
 safenav/

@@ -11,15 +11,10 @@ allowmixing
 
 left to right direction
 
-' ============================
-' COMPONENTS
-' ============================
-
 ' === External UI (Client) ===
 component "User Interface System" <<system>> as UISys {
   component "User Interface" as UI
 }
-
 interface "I_HTTP_Routes" as IHTTP
 IHTTP : + routeRequest(request : RouteRequest) : RouteResponse
 IHTTP : + getRouteResults(requestId : String) : RouteResponse
@@ -27,33 +22,31 @@ UI -down- IHTTP : HTTP/JSON
 
 ' === SafeNav Core ===
 component "SafeNav Core" <<system>> as Core {
+  
   component "API Layer\n(HTTP Controller)" as API
-  IHTTP -- API : uses
+  IHTTP -- API : implements
 
   component "Routing Engine\n(RE)" as RE
   interface "I_RoutingService" as IRoute
-  IRoute : + calculateRoutes(request : RouteRequest) : RouteCandidates
+  IRoute : + calculateRoutes(request : RouteRequest) : RouteScores
   IRoute : + getRouteById(id : String) : RouteCandidate
-
-  API -- IRoute
-  IRoute -- RE : uses
+  API --> IRoute
+  IRoute -- RE : implements
 
   component "Context Analyzer\n(CA)" as CA
   interface "I_ContextService" as IContext
   IContext : + evaluateRoutes(routes : RouteCandidates) : RouteScores
-  IContext : + getRouteScore(routeId : String) : RouteScores
-  API -- IContext
-  IContext -- CA : uses
+  RE --> IContext : uses
+  IContext -- CA : implements
 
   component "Data Management (DM)" as DM
   interface "I_DataAccess" as IData
   IData : + getMapData(area : Area) : MapData
   IData : + getWeatherData(time : DateTime) : WeatherData
   IData : + getUrbanData(area : Area) : UrbanData
-  RE  -- IData : uses
-  CA  -- IData : uses
-  IData -- DM
-  
+  RE --> IData : uses
+  CA --> IData : uses
+  IData -- DM : implements
 }
 
 ' === External Data Sources ===
@@ -72,9 +65,9 @@ IMeteoData : + fetchWeatherData(area : Area, time : DateTime) : WeatherResponse
 interface "I_OpenDataAccess"  as IOpenData
 IOpenData : + fetchUrbanData(area : Area, dataType : String) : OpenDataResponse
 
-DM -- IMapData : uses
-DM -- IMeteoData : uses
-DM -- IOpenData : uses
+DM -- IMapData : implements
+DM -- IMeteoData : implements
+DM -- IOpenData : implements
 
 IMapData -- MapAPI : E1: Map data
 IMeteoData -- MeteoAPI : E2: Weather data

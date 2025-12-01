@@ -17,7 +17,7 @@
     Router --> MapAPI : Request street network and map tiles
     Router <-- MapAPI : Return street network and map tiles
 
-    Router --> UI: Routes to show
+    
 
     Router --> Analyzer : Send route options to eveluate
 
@@ -27,7 +27,7 @@
     Analyzer --> OpenData : Request shade zones + POIs
     OpenData --> Analyzer : Return shaded areas, safe zones, water points
 
-    Analyzer --> UI : Return comfort/safety scores per route
+    Analyzer --> UI: Routes to show and confort/safety scores
 
     UI --> User : Display routes wiht "Safe rating" scores
 @enduml
