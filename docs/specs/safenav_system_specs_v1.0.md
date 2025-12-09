@@ -63,7 +63,7 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 |----|-------------|--------------------|-------------------------------|-----------|----------|
 | **C2** | **API Layer (HTTP Controller)** | Capa de entrada del núcleo SafeNav. Expone los servicios del sistema mediante una API REST para la UI. | - Recibir solicitudes HTTP desde la UI.<br>- Validar datos y convertirlos en objetos internos (`RouteRequest`, `Preferences`).<br>- Orquestar la ejecución de los módulos internos (`RE`, `CA`, `DM`).<br>- Devolver resultados en formato JSON. | Solicitudes REST desde la UI. | Respuestas JSON con rutas y puntuaciones. |
 | **C3** | **Routing Engine (RE)** | Núcleo de cálculo de rutas. Genera y optimiza rutas posibles utilizando los datos cartográficos y las condiciones actuales. | - Generar rutas candidatas a partir de los datos del mapa.<br>- Calcular ETA, distancia y costo de trayecto.<br>- Solicitar evaluación contextual al `CA`.<br>- Integrar puntuaciones y devolver rutas finales. | Datos del mapa (desde `DM`).<br>Solicitudes internas (desde `API Layer`). | Rutas optimizadas con puntuaciones. |
-| **C4** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE` y alertas al `API Layer`. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
+| **C4** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE`. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
 | **C5** | **Data Management (DM)** | Capa de gestión e integración de datos externos. Se encarga de conectar el sistema con las fuentes abiertas (`MapAPI`, `MeteoAPI`, `OpenDataAPI`), procesar los datos y entregarlos en formato interno. | - Obtener y actualizar datos externos.<br>- Preprocesar, normalizar y cachear información.<br>- Proveer datos consistentes a `RE` y `CA`.<br>- Mantener coherencia temporal y semántica de los datos. | Peticiones de datos desde `RE` y `CA`.<br>Datos de servicios externos. | Datos preparados (mapas, clima, contexto urbano). |
 ---
 
@@ -75,7 +75,7 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | ID | Nombre de Interfaz | Descripción | Datos Principales |
 |----|--------------------|-------------|-------------------|
 | **I_HTTP_Routes** | Interfaz HTTP de Rutas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar rutas, consultar resultados y recibir puntuaciones o alertas. | `RouteRequest`, `RouteResponse` |
-| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `RouteRequest`, `RouteCandidates` |
+| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `RouteRequest`, `RouteCandidates`, `RouteScores` |
 | **I_ContextService** | Servicio de Evaluación Contextual | Evalúa las rutas según factores ambientales (temperatura, sombra, alertas) y devuelve puntuaciones agregadas de confort y seguridad. | `RouteCandidates`, `RouteScores` |
 | **I_DataAccess** | Acceso a Datos Internos | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `MapData`, `WeatherData`, `UrbanData` |
 ---
@@ -94,7 +94,7 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | Componente | Interfaces Implementadas | Interfaces Utilizadas |
 |-------------|--------------------------|------------------------|
 | **User Interface (UI)** | — | `I_HTTP_Routes` |
-| **API Layer** | `I_HTTP_Routes` | `I_RoutingService`, `I_ContextService` |
+| **API Layer** | `I_HTTP_Routes` | `I_RoutingService` |
 | **Routing Engine (RE)** | `I_RoutingService` | `I_DataAccess` |
 | **Context Analyzer (CA)** | `I_ContextService` | `I_DataAccess` |
 | **Data Management (DM)** | `I_DataAccess`, `I_MapDataAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |

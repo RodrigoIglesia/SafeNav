@@ -6,10 +6,13 @@ Este es el repositorio del subsistema CORE de SafeNav.
     - Docker
     - Python 3.12-slim (Ubuntu)
 - Frameworks
-    - API: FastAPI
+    - API Layer: FastAPI - usando Pydantic para validación automática de datos usando Uvicorn como motor de la API
 
+## Metodología de implementación
+1. Definición de las DTOs: Estas son las estructuras de datos que intercambiará el sistema. Por ejemplo, map_data es la estructura de datos que devuelve DM al obtener datos de mapas del servicio externo.
+2. Definición de interfaces: una vez definidas las interfaces lógicas por diseño. Por cada interfaz se define un fichero que implementa los contratos de dicha interfaz (por ejemplo, RouteRequest, implementado por la API). Las interfaces son los contratos que definen cómo se comunicarán los módulos internos y externos entre sí.
 
-The repository is composed of
+## Estructura de Repositorio
 
 safenav/
 ├── api/                     # API Layer - implements I_HTTP_Routes

@@ -6,10 +6,10 @@ skinparam defaultFontSize 12
 skinparam ArrowFontSize 10
 skinparam nodesep 80
 skinparam ranksep 120
+skinparam Linetype ortho
 allowmixing
 
-left to right direction
-
+top to bottom direction
 ' ==================================
 ' INTERNAL DATA TRANSFER OBJECTS
 ' ==================================
@@ -127,29 +127,6 @@ class Polygon {
 }
 
 
-class MapDataResponse {
-+ features: [Feature]
-+ metadata: MapMetadata
-}
-
-class WeatherResponse {
-+ temperature: Float
-+ uv_index: Float
-+ alert: String
-}
-
-class OpenDataResponse {
-+ trees: [GeoPoint]
-+ fountains: [GeoPoint]
-+ benches: [GeoPoint]
-}
-
-class Feature {
-+ id: String
-+ geometry: Polygon
-+ properties: Map
-}
-
 ' ==================================
 ' RELATIONSHIPS (Composition)
 ' ==================================
@@ -157,7 +134,7 @@ class Feature {
 ' Route relationships
 RouteRequest *-- GeoPoint : origin/destination
 RouteRequest *-- RoutePreferences
-RouteResponse *-- RouteCandidate
+RouteResponse *-- RouteCandidates
 RouteResponse *-- ResponseMetadata
 RouteCandidates *-- RouteCandidate
 RouteCandidate *-- Polyline
@@ -181,11 +158,6 @@ Edge *-- GeoPoint
 Tile *-- Polygon
 Area *-- GeoPoint
 
-' External data relationships
-MapDataResponse *-- Feature
-MapDataResponse *-- MapMetadata
-Feature *-- Polygon
-OpenDataResponse *-- GeoPoint
 
 hide empty members
 skinparam classAttributeIconSize 0

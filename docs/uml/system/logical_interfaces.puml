@@ -28,16 +28,16 @@ component "SafeNav Core" <<system>> as Core {
 
   component "Routing Engine\n(RE)" as RE
   interface "I_RoutingService" as IRoute
-  IRoute : + calculateRoutes(request : RouteRequest) : RouteScores
-  IRoute : + getRouteById(id : String) : RouteCandidate
+  IRoute : + getRoute(id : String) : RouteCandidates
+  IRoute : + getRouteScores(id : String) : RouteScores
   API --> IRoute
   IRoute -- RE : implements
 
   component "Context Analyzer\n(CA)" as CA
   interface "I_ContextService" as IContext
   IContext : + evaluateRoutes(routes : RouteCandidates) : RouteScores
-  RE --> IContext : uses
-  IContext -- CA : implements
+  RE -right-> IContext : uses
+  IContext -right- CA : implements
 
   component "Data Management (DM)" as DM
   interface "I_DataAccess" as IData

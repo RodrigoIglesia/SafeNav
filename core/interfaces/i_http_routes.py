@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from core.domain.dto.route_request import RouteRequest
+from core.domain.dto.routes import RouteRequest
 from core.domain.dto.route_response import RouteResponse
 
 class I_HTTP_Routes(ABC):

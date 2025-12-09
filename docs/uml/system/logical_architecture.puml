@@ -25,8 +25,8 @@ component "SafeNav Core" <<system>> as Core {
 
   ' === Internal Interfaces ===
   API -down-> RE :    Route request
-  CA -up-> API :      Route + scores
   RE -right-> CA :    Route candidates
+  CA .left.> RE :      Route + scores
   CA -down-> DM :     Context data request
   DM .up.> CA :       Context data response
   RE -down-> DM :     Map data request
@@ -35,7 +35,7 @@ component "SafeNav Core" <<system>> as Core {
 
 ' === Connection between UI and Core ===
 UI --> API : I1: HTTP request\n(Route request)
-API --> UI : I1: HTTP response\n(Route results and alerts)
+API ..> UI : I1: HTTP response\n(Route results and alerts)
 
 ' === External Data Sources (vertical layout) ===
 package "External Data Sources" {
