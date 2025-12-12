@@ -10,7 +10,14 @@ Este es el repositorio del subsistema CORE de SafeNav.
 
 ## Metodología de implementación
 1. Definición de las DTOs: Estas son las estructuras de datos que intercambiará el sistema. Por ejemplo, map_data es la estructura de datos que devuelve DM al obtener datos de mapas del servicio externo.
-2. Definición de interfaces: una vez definidas las interfaces lógicas por diseño. Por cada interfaz se define un fichero que implementa los contratos de dicha interfaz (por ejemplo, RouteRequest, implementado por la API). Las interfaces son los contratos que definen cómo se comunicarán los módulos internos y externos entre sí.
+
+2. Definición de interfaces: una vez definidas las interfaces lógicas por diseño. Por cada interfaz se define un fichero que implementa los contratos de dicha interfaz (por ejemplo, RouteRequest, implementado por la API). Las interfaces son los contratos que definen cómo se comunicarán los módulos internos y externos entre sí. La implementación de las interfaces sigue el diseño lógico del sistema. Esta implementación formal permite:
+    - Los módulos no dependan directamente entre sí (solo de contratos).
+    - Capacidad de reemplazar implementaciones (por ejemplo, cambiar un proveedor de datos) sin romper el sistema.
+    - Capacidad de  mockear fácilmente los módulos en los tests.
+
+Para implementar las interfaces se usa la librería Typing Protocol (+Python3.8).
+
 
 ## Estructura de Repositorio
 
