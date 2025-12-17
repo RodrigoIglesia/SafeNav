@@ -17,6 +17,9 @@ Este es el repositorio del subsistema CORE de SafeNav.
     - Capacidad de  mockear fácilmente los módulos en los tests.
 
 Para implementar las interfaces se usa la librería Typing Protocol (+Python3.8).
+El intérprete de Python reconoce con Typing que las clases que comparten los mismos métodos y firmas que el protocolo serán compatibles (sin herencia)
+Los servicios SOLO deben implementar los métodos de la interfaz, se asegura que el contrato se cumple
+IHTTPRoutes no se implementa como interfaz de Python, si no FastAPI
 
 
 ## Estructura de Repositorio
@@ -45,7 +48,6 @@ safenav/
 │   └── models.py            # Data schemas and parsing logic
 │
 ├── interfaces/              # Interface contracts (system and external)
-│   ├── i_http_routes.py
 │   ├── i_routing_service.py
 │   ├── i_context_service.py
 │   ├── i_data_access.py

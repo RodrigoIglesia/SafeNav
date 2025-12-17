@@ -1,0 +1,38 @@
+openapi: 3.0.2
+info:
+  title: SafeNav API
+  version: "1.0"
+paths:
+  /routes:
+    post:
+      summary: Create route request
+      operationId: createRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteRequest'
+      responses:
+        "200":
+          description: Successful route calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteResponse'
+  /routes/{request_id}:
+    get:
+      summary: Get route by ID
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Route found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteResponse'

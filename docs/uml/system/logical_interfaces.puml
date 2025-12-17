@@ -17,7 +17,6 @@ component "User Interface System" <<system>> as UISys {
 }
 interface "I_HTTP_Routes" as IHTTP
 IHTTP : + routeRequest(request : RouteRequest) : RouteResponse
-IHTTP : + getRouteResults(requestId : String) : RouteResponse
 UI -down- IHTTP : HTTP/JSON
 
 ' === SafeNav Core ===
