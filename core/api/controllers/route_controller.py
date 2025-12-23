@@ -18,10 +18,11 @@ Endpoints:
 
 
 from fastapi import APIRouter
-from domain.dto.route_request import RouteRequest
-from domain.dto.route_response import RouteResponse
-from core.interfaces.i_routing_service import IRoutingService
-router = APIRouter(prefix="/routes", tags=["Routes"])
+from domain.dto.routes import RouteRequest
+from domain.dto.routes import RouteResponse
+from interfaces.i_routing_service import IRoutingService
+
+router = APIRouter(tags=["Routing"])
 
 # TODO: Routing Engine is a mock for testing purposes.
 

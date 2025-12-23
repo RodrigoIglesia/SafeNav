@@ -24,7 +24,7 @@ IHTTPRoutes no se implementa como interfaz de Python, si no FastAPI
 
 ## Estructura de Repositorio
 
-safenav/
+core/
 ├── api/                     # API Layer - implements I_HTTP_Routes
 │   ├── service.py           # Main API service (entry point)
 │   └── ...                  # HTTP routes, controllers, serializers
@@ -72,5 +72,6 @@ safenav/
 │   ├── config.py
 │   ├── logger.py
 │   └── utils.py
-│
-└── main.py                  # Composition root / application entry point
+├── DOCKERFILE
+|
+docker-compose.yml

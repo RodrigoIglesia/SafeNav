@@ -7,9 +7,9 @@ exposing the defined HTTP endpoints for route operations.
 """
 
 from fastapi import FastAPI
-from core.api.controllers.route_controller import router as route_router
-from core.routing_engine.service import RoutingEngine
-from core.api.service_interfaces.routing_service_interface import IRoutingService
+from api.controllers.route_controller import router
+from routing_engine.service import RoutingEngine
+from interfaces.i_routing_service import IRoutingService
 
 def create_api_service() -> FastAPI:
     """
@@ -34,7 +34,7 @@ def create_api_service() -> FastAPI:
     app.state.routing_service = routing_service
 
     # Register routers
-    app.include_router(route_router, prefix="/routes", tags=["Routing"])
+    app.include_router(router, prefix="/routes", tags=["Routing"])
 
     # Health check endpoint
     @app.get("/health", tags=["System"])
