@@ -17,20 +17,18 @@ Endpoints:
 """
 
 
-from fastapi import APIRouter
-from domain.dto.routes import RouteRequest
-from domain.dto.routes import RouteResponse
+from fastapi import APIRouter, Request
+from domain.dto.routes import RouteRequest, RouteResponse
 from interfaces.i_routing_service import IRoutingService
 
-router = APIRouter(tags=["Routing"])
-
-# TODO: Routing Engine is a mock for testing purposes.
+router = APIRouter(prefix="/routes", tags=["Routes"])
 
 @router.post("/", response_model=RouteResponse)
-def create_route(request_body: RouteRequest, request: RouteRequest):
+def create_route(request_body: RouteRequest, request: Request):
     """
     Process a route request and return candidate routes.
     """
     routing_service: IRoutingService = request.app.state.routing_service
     return routing_service.get_route(request_body)
+
 

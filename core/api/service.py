@@ -34,7 +34,7 @@ def create_api_service() -> FastAPI:
     app.state.routing_service = routing_service
 
     # Register routers
-    app.include_router(router, prefix="/routes", tags=["Routing"])
+    app.include_router(router)
 
     # Health check endpoint
     @app.get("/health", tags=["System"])

@@ -17,3 +17,21 @@ services:
       --reload
     environment:
       - PYTHONUNBUFFERED=1
+    restart:
+      unless-stopped
+
+  safenav-ui:
+    build:
+      context: ./ui
+      dockerfile: DOCKERFILE
+    container_name: safenav-ui
+    ports:
+      - "5173:5173"         # Vite dev server
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    working_dir: /app
+    command: ["npm", "run", "dev", "--", "--host"]
+    depends_on:
+      - safenav-core
+    restart: unless-stopped
