@@ -19,11 +19,16 @@ interface "I_HTTP_Routes" as IHTTP
 IHTTP : + routeRequest(request : RouteRequest) : RouteResponse
 UI -down- IHTTP : HTTP/JSON
 
+interface "I_HTTP_Map" as IHTTPMap
+IHTTPMap : + mapRequest(request : mapRequest) : MapDataResponse
+UI -down- IHTTPMap : HTTP/JSON
+
 ' === SafeNav Core ===
 component "SafeNav Core" <<system>> as Core {
   
   component "API Layer\n(HTTP Controller)" as API
   IHTTP -- API : implements
+  IHTTPMap -- API : implements
 
   component "Routing Engine\n(RE)" as RE
   interface "I_RoutingService" as IRoute
@@ -39,12 +44,20 @@ component "SafeNav Core" <<system>> as Core {
   IContext -right- CA : implements
 
   component "Data Management (DM)" as DM
-  interface "I_DataAccess" as IData
-  IData : + getMapData(area : Area) : MapData
+  interface "I_RoadGraphAccess" as IGraph
+  IGraph : + getGraphData(area : Area) : GraphData
+  interface "I_MapViewService" as IMapView
+  IMapView : + getMapView(area : Area) : MapData
+  interface "I_ContextDataAccess" as IData
   IData : + getWeatherData(time : DateTime) : WeatherData
   IData : + getUrbanData(area : Area) : UrbanData
-  RE --> IData : uses
+
+  RE --> IGraph : uses
   CA --> IData : uses
+  API --> IMapView : uses
+
+  IGraph -- DM : implements
+  IMapView -- DM : implements
   IData -- DM : implements
 }
 

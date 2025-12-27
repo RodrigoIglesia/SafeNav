@@ -1,3 +1,5 @@
+#TODO: Reformular y crear interfaces de IMapDataAccess e IGraphDataAccess
+
 # core/interfaces/i_data_access.py
 from typing import Protocol
 from datetime import datetime

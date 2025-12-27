@@ -1,3 +1,5 @@
+#TODO: Implementar contrato para obtener el mapa a visualizar
+
 """
 SafeNav Core - Route Controller
 -------------------------------
@@ -19,7 +21,10 @@ Endpoints:
 
 from fastapi import APIRouter, Request
 from domain.dto.routes import RouteRequest, RouteResponse
+from domain.dto.common import ResponseMetadata
 from interfaces.i_routing_service import IRoutingService
+from datetime import datetime, timezone
+from uuid import uuid4
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
 
@@ -29,6 +34,18 @@ def create_route(request_body: RouteRequest, request: Request):
     Process a route request and return candidate routes.
     """
     routing_service: IRoutingService = request.app.state.routing_service
-    return routing_service.get_route(request_body)
+    candidates =  routing_service.calculate_routes(request_body)
+    scores = routing_service.get_route_scores(candidates)
+    metadata = ResponseMetadata(
+        timestamp=datetime.now(timezone.utc),
+        request_id=str(uuid4()),
+        source="SafeNavCore",
+    )
+
+    return RouteResponse(
+        routes=candidates,
+        scores=scores,
+        metadata=metadata,
+    )
 
 

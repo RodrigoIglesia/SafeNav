@@ -6,28 +6,53 @@ Implements the IRoutingService interface.
 This version returns mock data for development/testing.
 """
 
-from domain.dto.routes import RouteRequest, RouteResponse, RouteCandidate, ResponseMetadata
-from domain.dto.common import GeoPoint
-from datetime import datetime
+from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
+from datetime import datetime, timezone
+from interfaces.i_routing_service import IRoutingService
 from uuid import uuid4
 
-
-class RoutingEngine:
+class RoutingEngine(IRoutingService):
     """Implements IRoutingService."""
 
-    def get_route(self, request: RouteRequest) -> RouteResponse:
-        # TODO: Mock - Generate fake candidate route
+    def calculate_routes(self, request: RouteRequest) -> RouteCandidates:
+        """
+        Generate route candidates for a given request.
+        """
+
         candidate = RouteCandidate(
             id=str(uuid4()),
-            geometry={"coordinates": [request.origin, request.destination]},
+            geometry={
+                "coordinates": [
+                    request.origin,
+                    request.destination,
+                ]
+            },
             eta=900,
-            distance=1.2
+            distance=1.2,
         )
 
-        metadata = ResponseMetadata(
-            timestamp=datetime.utcnow(),
+        return RouteCandidates(
             request_id=str(uuid4()),
-            source="RoutingEngine-Mock"
+            items = [candidate]
         )
 
-        return RouteResponse(routes=[candidate], metadata=metadata)
+    def get_route_scores(self, candidates: RouteCandidates) -> RouteScores:
+        """
+        Retrieve evaluated scores for a previously generated route request.
+        """
+
+        # TODO: Mock score
+        scores = []
+        for candidate in candidates.items:
+            scores.append(
+                RouteScore(
+                    id=candidate.id,
+                    comfort_score=0.75,
+                    safety_score=0.85,
+                    segment_scores=None,
+                )
+            )
+
+        return RouteScores(
+            scores=scores
+        )

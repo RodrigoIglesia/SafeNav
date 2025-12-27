@@ -1,3 +1,6 @@
+[ ] TODO: Reformular las interfaces lógicas según el UML
+
+
 # 1. Descripción del Sistema
 El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo proporcionar a los peatones rutas **seguras o confortables** en entornos urbanos.
 

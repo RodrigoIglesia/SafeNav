@@ -7,6 +7,6 @@ class IRoutingService(Protocol):
         """Generate route candidates given a user request."""
         ...
 
-    def get_route_scores(self, request_id: str) -> RouteScores:
+    def get_route_scores(self, candidates: RouteCandidates) -> RouteScores:
         """Retrieve evaluated scores for a computed route."""
         ...

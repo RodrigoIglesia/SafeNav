@@ -1,3 +1,4 @@
+//TODO: Implementar la llamada al endpoint de mapas
 // src/api.js
 /*
  * API module for interacting with the SafeNav Core backend.
