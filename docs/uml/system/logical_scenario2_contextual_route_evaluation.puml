@@ -1,0 +1,37 @@
+@startuml
+note across
+Scenario 2 – Contextual Route Evaluation
+"This sequence diagram illustrates the internal contextual evaluation of route
+candidates performed by SafeNav. This scenario is automatically triggered by
+the API Layer after route candidates are generated and may be skipped depending
+on system configuration or availability of contextual data."
+end note
+
+participant "API Layer" as API
+participant "Routing Engine" as RE
+participant "Context Analyzer" as CA
+participant "Data Management" as DM
+participant "Meteo Data Source" as Meteo
+participant "Open Data Source" as OpenData
+
+API -> RE : request route evaluation\n(RouteCandidates)
+
+RE -> CA : evaluate routes\n(RouteCandidates)
+
+CA -> DM : request weather data
+DM -> Meteo : fetch weather conditions
+Meteo --> DM : WeatherData
+DM --> CA : WeatherData
+
+CA -> DM : request urban context data
+DM -> OpenData : fetch urban data
+OpenData --> DM : UrbanData
+DM --> CA : UrbanData
+
+CA --> RE : RouteScores
+
+RE --> API : RouteScores
+
+API --> API : enrich RouteResponse\n(with contextual scores)
+@enduml
+[ ] TODO (futuro) - Deben añadirse más escenarios a partir de este, con distintos tipos de evaluaciones del contexto de la ruta

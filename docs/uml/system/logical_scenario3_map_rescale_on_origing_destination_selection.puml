@@ -1,0 +1,28 @@
+@startuml
+note across
+Scenario 3 – Map Re-centering on Origin and Destination Selection
+"This scenario illustrates how the map visualization is updated when
+the user selects an origin and a destination. The map view is adjusted
+to focus on the area that contains the selected locations."
+end note
+
+actor "User" as User
+participant "User Interface" as UI
+participant "API Layer" as API
+participant "Data Management" as DM
+participant "Map Services" as MapAPI
+
+User -> UI : Select origin and destination
+
+UI -> API : I_HTTP_Map: mapRequest(area = origin/destination bounds)
+
+API -> DM : I_Map_View: getMapView(selected area)
+DM -> MapAPI : I_Map_Data_Access: fetchMapData(selected area)
+MapAPI --> DM : I_Map_Data_Access: MapData
+
+DM --> API : I_Map_View: MapData
+
+API --> UI : I_HTTP_Map: MapDataResponse
+
+UI -> User : Display map centered on origin and destination
+@enduml

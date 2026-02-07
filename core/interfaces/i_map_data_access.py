@@ -1,18 +1,22 @@
+# FIXME: De momento, I_MapDataAccess (externo) devuelve un objeto MapData como IMapView, en un futuro se puede adaptar a la fuente externa.
+# core/interfaces/i_data_access.py
 from typing import Protocol
-from domain.dto.map_data import MapData
 from domain.dto.common import Area
+from domain.dto.map_data import MapData
 
 
 class IMapDataAccess(Protocol):
     """
-    Interface for accessing external map services (E1).
-    Implemented by Data Management to communicate with MapAPI.
+    Internal data access interface.
+    Implemented by DataManagement to provide unified access
+    to maps external data.
     """
 
     def fetch_map_data(self, area: Area) -> MapData:
         """
-        Retrieves road network and map layers for a given area.
+        Returns preprocessed map data for a given area.
+
         - area: Geographic area of interest
-        - returns: MapData with road graph, tiles, and metadata
+        - returns: MapData (tiles, metadata)
         """
         ...

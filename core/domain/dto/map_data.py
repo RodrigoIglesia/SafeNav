@@ -17,16 +17,20 @@ from .common import GeoPoint, Polygon
 # === Graph structures ===
 
 class Edge(BaseModel):
-    """Represents a connection (edge) between two points in the road graph."""
-    start: GeoPoint = Field(..., description="Start coordinate of the edge")
-    end: GeoPoint = Field(..., description="End coordinate of the edge")
-    weight: float = Field(..., ge=0, description="Edge weight (e.g., distance or travel cost)")
+    """Directed weighted edge in the road graph."""
+    from_node: GeoPoint = Field(..., description="Start node of the edge")
+    to_node: GeoPoint = Field(..., description="End node of the edge")
+    weight: float = Field(..., ge=0, description="Traversal cost (distance, time, etc.)")
 
 
-class Graph(BaseModel):
-    """Simplified topological graph of the road network."""
-    nodes: List[GeoPoint] = Field(..., description="List of graph nodes (intersections, points)")
-    edges: List[Edge] = Field(..., description="List of graph edges connecting nodes")
+class GraphData(BaseModel):
+    """
+    Minimal navigable graph used by the Routing Engine.
+    No tiles, no zoom, no visual metadata.
+    """
+    nodes: List[GeoPoint] = Field(..., description="Graph nodes (road intersections, junctions)")
+    edges: List[Edge] = Field(..., description="Directed edges connecting graph nodes")
+
 
 
 # === Tile data ===
@@ -50,6 +54,25 @@ class MapMetadata(BaseModel):
 
 class MapData(BaseModel):
     """Container for all map and topological data required by the Routing Engine."""
-    road_graph: Graph = Field(..., description="Topological graph of the road network")
     tiles: List[Tile] = Field(..., description="List of map tiles that compose the area of interest")
     metadata: MapMetadata = Field(..., description="Metadata about the map dataset")
+
+
+# === Map HTTP request/response ===
+
+class MapRequest(BaseModel):
+    """
+    Request object for map visualization.
+    Sent by the UI to the API.
+    """
+    area: Polygon = Field(..., description="Geographic area requested for map rendering")
+    zoom_level: int = Field(..., ge=0, le=24, description="Zoom level requested by the UI")
+    include_tiles: bool = Field(True, description="Whether map tiles should be included in the response")
+    include_metadata: bool = Field(True, description="Whether metadata should be included in the response")
+
+
+class MapDataResponse(BaseModel):
+    """
+    HTTP response object for map visualization requests.
+    """
+    map: MapData = Field(..., description="Map data for rendering on the client")

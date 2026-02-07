@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from api.controllers.route_controller import router
 from routing_engine.service import RoutingEngine
 from interfaces.i_routing_service import IRoutingService
+from data_management.service import DataManagement
+from interfaces.i_map_view import I_MapView
 
 def create_api_service() -> FastAPI:
     """
@@ -32,6 +34,9 @@ def create_api_service() -> FastAPI:
     # =======================================================
     routing_service: IRoutingService = RoutingEngine()
     app.state.routing_service = routing_service
+
+    map_view_service: I_MapView = DataManagement()
+    app.state.map_view_service = map_view_service
 
     # Register routers
     app.include_router(router)

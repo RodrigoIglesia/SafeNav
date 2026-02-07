@@ -1,5 +1,3 @@
-#TODO: Implementar contrato para obtener el mapa a visualizar
-
 """
 SafeNav Core - Route Controller
 -------------------------------
@@ -22,11 +20,17 @@ Endpoints:
 from fastapi import APIRouter, Request
 from domain.dto.routes import RouteRequest, RouteResponse
 from domain.dto.common import ResponseMetadata
+from domain.dto.map_data import MapRequest, MapDataResponse
 from interfaces.i_routing_service import IRoutingService
+from interfaces.i_map_view import I_MapView
 from datetime import datetime, timezone
 from uuid import uuid4
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
+
+# ======================================================
+# === Route request endpoint
+# ======================================================
 
 @router.post("/", response_model=RouteResponse)
 def create_route(request_body: RouteRequest, request: Request):
@@ -48,4 +52,18 @@ def create_route(request_body: RouteRequest, request: Request):
         metadata=metadata,
     )
 
+# ======================================================
+# === Map visualization endpoint
+# ======================================================
 
+@router.post("/map", response_model=MapDataResponse)
+def get_map_view(request_body: MapRequest, request: Request):
+    """
+    Retrieve map data for visualization in the UI.
+    """
+    map_view_service: I_MapView = request.app.state.map_view_service
+    map_data = map_view_service.get_map_view(request_body)
+
+    return MapDataResponse(
+        map=map_data
+    )

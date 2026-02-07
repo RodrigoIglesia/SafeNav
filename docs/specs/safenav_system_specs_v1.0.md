@@ -1,5 +1,3 @@
-[ ] TODO: Reformular las interfaces lógicas según el UML
-
 
 # 1. Descripción del Sistema
 El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo proporcionar a los peatones rutas **seguras o confortables** en entornos urbanos.
@@ -48,7 +46,6 @@ SafeNav se compone de los siguientes subsistemas:
 ---
 
 # 3. Arquitectura Lógica
-![alt text](logical_architecture.png)
 ## Subsistema S1: User Interface (UI)
 
 | ID | Componente | Descripción General | Responsabilidades Principales | Entradas | Salidas |
@@ -78,9 +75,12 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | ID | Nombre de Interfaz | Descripción | Datos Principales |
 |----|--------------------|-------------|-------------------|
 | **I_HTTP_Routes** | Interfaz HTTP de Rutas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar rutas, consultar resultados y recibir puntuaciones o alertas. | `RouteRequest`, `RouteResponse` |
-| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `RouteRequest`, `RouteCandidates`, `RouteScores` |
+| **I_HTTP_Map** | Interfaz HTTP para visualizar mapas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar un mapa para mostrar. | `mapRequest`, `MapDataResponse` |
+| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `Area`, `RouteCandidates`, `RouteScores` |
+| **I_MapView** | Servicio de Solicitud de mapa | Proporciona mapas para ser mostrados y sobre los que trazar las rutas calculadas | `getMapView`, `MapData` |
 | **I_ContextService** | Servicio de Evaluación Contextual | Evalúa las rutas según factores ambientales (temperatura, sombra, alertas) y devuelve puntuaciones agregadas de confort y seguridad. | `RouteCandidates`, `RouteScores` |
-| **I_DataAccess** | Acceso a Datos Internos | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `MapData`, `WeatherData`, `UrbanData` |
+| **I_RoadGraphAccess** | Acceso a grafos de representación de rutas de mapas (nodos y aristas) | Proporciona acceso a estructuras de datos en formato de grafo para representar mapas. | `Area`, `GraphData` |
+| **I_ContextDataAccess** | Acceso a Datos obtenidos de fuentes externas (urbanos y meteorológicos) | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `WeatherData`, `UrbanData` |
 ---
 
 ## Interfaces Externas (Fuentes de Datos)
@@ -96,11 +96,11 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 
 | Componente | Interfaces Implementadas | Interfaces Utilizadas |
 |-------------|--------------------------|------------------------|
-| **User Interface (UI)** | — | `I_HTTP_Routes` |
-| **API Layer** | `I_HTTP_Routes` | `I_RoutingService` |
-| **Routing Engine (RE)** | `I_RoutingService` | `I_DataAccess` |
-| **Context Analyzer (CA)** | `I_ContextService` | `I_DataAccess` |
-| **Data Management (DM)** | `I_DataAccess`, `I_MapDataAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |
+| **User Interface (UI)** | — | `I_HTTP_Routes`, `I_HTTP_Map` |
+| **API Layer** | `I_HTTP_Routes`, `I_HTTP_Map` | `I_RoutingService`, `I_MapView` |
+| **Routing Engine (RE)** | `I_RoutingService` | `I_RoadGraphAccess` |
+| **Context Analyzer (CA)** | `I_ContextService` | `I_ContextDataAccess` |
+| **Data Management (DM)** | `I_ContextDataAccess`, `I_RoadGraphAccess`, `I_MapView`, `I_MapDataAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |
 
 ---
 
@@ -112,12 +112,10 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | **RouteResponse** | Respuesta de rutas con puntuaciones y metadatos. | `routes: [RouteCandidate]`, `metadata: ResponseMetadata` |
 | **RouteCandidates** | Conjunto de rutas candidatas generadas por el motor de rutas. | `route_id`, `geometry`, `eta`, `distance` |
 | **RouteScores** | Puntuaciones de seguridad y confort asignadas por el analizador contextual. | `comfort_score`, `safety_score`, `segment_scores` |
-| **MapData** | Datos cartográficos estructurados internos. | `road_graph`, `tiles`, `metadata` |
+| **GraphData** | Datos cartográficos convertidos en estructura de grafo para planificación. | `Graph`, `metadata` |
+| **MapData** | Datos cartográficos estructurados internos. | `tiles`, `metadata` |
 | **WeatherData** | Datos meteorológicos procesados. | `temperature`, `uv_index`, `alert_level` |
 | **UrbanData** | Datos urbanos relevantes para confort y seguridad. | `shadow_zones`, `water_points`, `POIs` |
 
 ---
-
-![alt text](DTO_class_diagram.png)
-
 

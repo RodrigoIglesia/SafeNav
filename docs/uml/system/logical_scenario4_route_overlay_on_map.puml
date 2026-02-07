@@ -1,0 +1,19 @@
+[ ] TODO: review
+@startuml
+note across
+Scenario 4 – Map Visualization with Route Overlay
+"This scenario illustrates how the calculated route candidates and their
+associated safety and comfort scores are rendered on top of the current
+map view already displayed to the user."
+end note
+
+actor "User" as User
+participant "User Interface" as UI
+participant "API Layer" as API
+
+API --> UI : I_HTTP_Routes: RouteResponse\n(routes + scores)
+
+UI -> UI : Render routes overlay\non existing map view
+
+UI -> User : Display routes with safety/comfort indicators
+@enduml

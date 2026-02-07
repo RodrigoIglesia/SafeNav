@@ -1,0 +1,28 @@
+@startuml
+note across
+Scenario 0 – Default Map Visualization
+"This scenario illustrates the initial map visualization displayed
+when the application is loaded, before the user selects an origin
+or destination."
+end note
+
+actor "User" as User
+participant "User Interface" as UI
+participant "API Layer" as API
+participant "Data Management" as DM
+participant "Map Services" as MapAPI
+
+User -> UI : Open application
+
+UI -> API : I_HTTP_Map: mapRequest()
+
+API -> DM : I_Map_View: getMapView(default area)
+DM -> MapAPI : I_Map_Data_Access: fetchMapData(default area)
+MapAPI --> DM : I_Map_Data_Access: MapData
+
+DM --> API : I_Map_View: MapData
+
+API --> UI : I_HTTP_Map:MapDataResponse
+
+UI -> User : Display default city map
+@enduml
