@@ -9,10 +9,13 @@ This version returns mock data for development/testing.
 from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
 from datetime import datetime, timezone
 from interfaces.i_routing_service import IRoutingService
+from interfaces.i_road_graph_access import I_RoadGraphAccess
 from uuid import uuid4
 
 class RoutingEngine(IRoutingService):
     """Implements IRoutingService."""
+    def __init__(self, road_graph_access: I_RoadGraphAccess):
+        self.road_graph_access = road_graph_access
 
     def calculate_routes(self, request: RouteRequest) -> RouteCandidates:
         """
