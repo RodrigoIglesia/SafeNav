@@ -1,0 +1,37 @@
+version: "3.3"
+
+services:
+  safenav-core:
+    build:
+      context: ./core
+      dockerfile: DOCKERFILE
+    container_name: safenav-core
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./core:/app            # TODO: Hot reload en desarrollo (eliminar en prod)
+    command: >
+      uvicorn api.service:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart:
+      unless-stopped
+
+  safenav-ui:
+    build:
+      context: ./ui
+      dockerfile: DOCKERFILE
+    container_name: safenav-ui
+    ports:
+      - "5173:5173"         # Vite dev server
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    working_dir: /app
+    command: ["npm", "run", "dev", "--", "--host"]
+    depends_on:
+      - safenav-core
+    restart: unless-stopped

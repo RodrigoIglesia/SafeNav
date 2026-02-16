@@ -1,4 +1,5 @@
 @startuml
+
 !include docs/uml/theme.puml
 skinparam linetype ortho
 skinparam defaultTextAlignment center
@@ -21,22 +22,26 @@ component "SafeNav Core" <<system>> as Core {
   component "API Layer (HTTP Controller)" as API
   component "Routing Engine\n(RE)" as RE
   component "Context Analyzer\n(CA)" as CA
-  component "        Data Management (DM)       " as DM
+  component "                                Data Management (DM)                               " as DM
 
   ' === Internal Interfaces ===
   API -down-> RE :    Route request
   RE .up.> API :      Route results
-  CA -up-> API :      Route scores
   RE -right-> CA :    Route candidates
+  API -down-> DM :    Map view request
+  DM .up.> API :      Map view response
+  CA .left.> RE :      Route + scores
   CA -down-> DM :     Context data request
   DM .up.> CA :       Context data response
-  RE -down-> DM :     Map data request
-  DM .up.> RE :       Map data response
+  RE -down-> DM :     Graph data request
+  DM .up.> RE :       Graph data response
 }
 
 ' === Connection between UI and Core ===
-UI --> API : I1: HTTP request\n(Route request)
-API --> UI : I1: HTTP response\n(Route results and alerts)
+UI --> API : HTTP request\n(Map view request)
+API ..> UI : HTTP response\n(Map view)
+UI --> API : HTTP request\n(Route request)
+API ..> UI : HTTP response\n(Route results and alerts)
 
 ' === External Data Sources (vertical layout) ===
 package "External Data Sources" {
@@ -47,12 +52,12 @@ package "External Data Sources" {
 }
 
 ' === External Interfaces ===
-DM --> MapAPI : E1: Map data requests
-MapAPI ..> DM : E1: Map data responses
-DM --> Meteo : E2: Weather data requests
-Meteo ..> DM : E2: Weather data responses
-DM --> OpenData : E3: Urban open data requests
-OpenData ..> DM : E3: Urban data responses
+DM --> MapAPI : Map data requests
+MapAPI ..> DM : Map data responses
+DM --> Meteo : Weather data requests
+Meteo ..> DM : Weather data responses
+DM --> OpenData : Urban open data requests
+OpenData ..> DM : Urban data responses
 
 
 @enduml

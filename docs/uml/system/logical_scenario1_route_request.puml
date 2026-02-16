@@ -1,0 +1,33 @@
+@startuml
+note across: Scenario 1 – Route Request and Candidate Generation\n""This sequence diagram illustrates the interactions between the user and the SafeNav system components when a user requests a safe route home. \nIn this scenario SafeNav only returns the route candidates as Graph Data.""
+
+actor "User" as User
+participant "User Interface" as UI
+participant "API Layer" as API
+participant "Routing Engine" as RE
+participant "Road Graph Access" as IGraph
+participant "Data Management" as DM
+participant "Map Services\n(MapAPI)" as MapAPI
+
+User -> UI : Go Home request
+
+UI -> API : I_HTTP_Routes: create_route(RouteRequest)
+
+API -> RE : I_Routing_Service: calculate_routes(request)
+
+RE -> DM : I_Road_Graph_Access: getGraphData(area)
+
+DM -> MapAPI : I_Map_Data_Access: fetchMapData(area)
+MapAPI --> DM : I_Map_Data_Access:MapData
+
+DM --> RE : I_Road_Graph_Access: GraphData
+
+RE --> API : I_Routing_Service: RouteCandidates
+
+alt Contextual evaluation
+    note across: Scenario 2 will be triggered here for contextual route evaluation
+
+else No contextual evaluation
+    API --> UI : I_HTTP_Routes: RouteResponse\n(routes only)
+end
+@enduml

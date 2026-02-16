@@ -1,0 +1,165 @@
+@startuml
+!include docs/uml/theme.puml
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam defaultFontSize 12
+skinparam ArrowFontSize 10
+skinparam nodesep 80
+skinparam ranksep 120
+skinparam Linetype ortho
+allowmixing
+
+top to bottom direction
+' ==================================
+' INTERNAL DATA TRANSFER OBJECTS
+' ==================================
+class RouteRequest {
++ origin: GeoPoint
++ destination: GeoPoint
++ preferences: RoutePreferences
+}
+
+class RouteResponse {
++ routes: [RouteCandidate]
++ metadata: ResponseMetadata
+}
+
+class RouteCandidate {
++ id: String
++ geometry: Polyline
++ eta: Number
++ distance: Number
+}
+
+class RouteCandidates {
++ items: [RouteCandidate]
+}
+
+class RouteScores {
++ comfort_score: Float
++ safety_score: Float
++ segment_scores: [SegmentScore]
+}
+
+class MapData {
++ road_graph: Graph
++ tiles: [Tile]
++ metadata: MapMetadata
+}
+
+class WeatherData {
++ temperature: Float
++ uv_index: Float
++ alert_level: String
+}
+
+class UrbanData {
++ shadow_zones: [Polygon]
++ water_points: [GeoPoint]
++ POIs: [POI]
+}
+
+
+class GeoPoint {
++ lat: Float
++ lon: Float
+}
+
+class RoutePreferences {
++ minimize_sun: Boolean
++ avoid_hazard_zones: Boolean
++ prioritize_speed: Boolean
++ comfort_weight: Float
+}
+
+class ResponseMetadata {
++ timestamp: DateTime
++ request_id: String
++ source: String
+}
+
+class SegmentScore {
++ segment_id: String
++ comfort: Float
++ safety: Float
+}
+
+class Area {
++ center: GeoPoint
++ radius_m: Float
+}
+
+class Polyline {
++ coordinates: [GeoPoint]
+}
+
+class POI {
++ id: String
++ name: String
++ type: String
++ location: GeoPoint
+}
+
+class Graph {
++ nodes: [GeoPoint]
++ edges: [Edge]
+}
+
+class Edge {
++ start: GeoPoint
++ end: GeoPoint
++ weight: Float
+}
+
+class Tile {
++ id: String
++ bounds: Polygon
+}
+
+class MapMetadata {
++ source: String
++ date: DateTime
++ zoom_level: Int
+}
+
+class Polygon {
++ coordinates: [GeoPoint]
+}
+
+
+' ==================================
+' RELATIONSHIPS (Composition)
+' ==================================
+
+' Route relationships
+RouteRequest *-- GeoPoint : origin/destination
+RouteRequest *-- RoutePreferences
+RouteResponse *-- RouteCandidates
+RouteResponse *-- ResponseMetadata
+RouteCandidates *-- RouteCandidate
+RouteCandidate *-- Polyline
+RouteScores *-- SegmentScore
+
+' Map / Urban / Weather
+MapData *-- Graph
+MapData *-- Tile
+MapData *-- MapMetadata
+UrbanData *-- Polygon
+UrbanData *-- GeoPoint
+UrbanData *-- POI
+
+' Supporting type relationships
+Polyline *-- GeoPoint
+Polygon *-- GeoPoint
+POI *-- GeoPoint
+Graph *-- GeoPoint
+Graph *-- Edge
+Edge *-- GeoPoint
+Tile *-- Polygon
+Area *-- GeoPoint
+
+
+hide empty members
+skinparam classAttributeIconSize 0
+
+@enduml

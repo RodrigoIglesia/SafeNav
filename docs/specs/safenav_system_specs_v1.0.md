@@ -1,3 +1,4 @@
+
 # 1. Descripción del Sistema
 El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo proporcionar a los peatones rutas **seguras o confortables** en entornos urbanos.
 
@@ -20,7 +21,7 @@ En este capítulo se listan las funcionalidades llevadas a cabo por el sistema.
 | **F3** | **Evaluación contextual de rutas** | El componente **Context Analyzer (CA)** analiza cada ruta candidata considerando factores meteorológicos, sombra y elementos urbanos para determinar su nivel de confort y seguridad. |
 | **F4** | **Fusión de datos ambientales y urbanos** | El sistema integra información procedente de diferentes fuentes (clima, datos abiertos urbanos, topología vial) para ofrecer una visión contextual unificada de las condiciones actuales. |
 | **F5** | **Asignación de puntuaciones de seguridad y confort** | Cada ruta se evalúa y se le asigna un “score” que representa su nivel de exposición al calor, disponibilidad de sombra, fuentes de agua, etc. |
-| **F6** | **Selección y recomendación de la mejor ruta** | SafeNav combina tiempo estimado, distancia y puntuaciones de confort para recomendar la ruta más adecuada a las preferencias del usuario. |
+| **F6** | **Priorización y recomendación de rutas** | SafeNav puede priorizar las rutas candidatas combinando tiempo estimado, distancia y puntuaciones de confort/seguridad, devolviendo una o varias rutas ordenadas según las preferencias del usuario. |
 | **F7** | **Visualización de rutas y resultados** | La interfaz de usuario (**UI**) muestra las rutas recomendadas en un mapa, indicando puntuaciones, alertas y elementos relevantes (zonas sombreadas, puntos de agua, etc.). |
 ---
 
@@ -31,7 +32,7 @@ Se consideran los siguientes sistemas externos:
 
 | ID | Sistema Externo | Tipo / Naturaleza | Descripción | Datos o Servicios Proporcionados | Mecanismo de Intercambio | Formato de Datos Esperado |
 |----|------------------|------------------|--------------|----------------------------------|--------------------------|---------------------------|
-| **ES1** | **Map Services (MapAPI)** | Servicio cartográfico | Proporciona datos geoespaciales base: red vial, geometrías de calles, polígonos de zonas urbanas y metadatos asociados. Utilizado por el componente **Routing Engine (RE)** para la generación de rutas. | - Calles y red vial<br>- Capas de mapa (tiles)<br>- Información geográfica y topológica | Peticiones HTTP/REST | GeoJSON, JSON |
+| **ES1** | **Map Services (MapAPI)** | Servicio cartográfico | Proporciona datos geoespaciales base: red vial, geometrías de calles, polígonos de zonas urbanas y metadatos asociados. Utilizado por el sistema SafeNav (a través del componente **Data Management**) para proporcionar datos cartográficos tanto para la generación de rutas como para la visualización del mapa. | - Calles y red vial<br>- Capas de mapa (tiles)<br>- Información geográfica y topológica | Peticiones HTTP/REST | GeoJSON, JSON |
 | **ES2** | **Meteo Sources (MeteoAPI)** | Servicio meteorológico | Ofrece información meteorológica en tiempo real y alertas. Utilizado por el **Context Analyzer (CA)** (a través del **DM**) para obtener condiciones de temperatura, radiación y eventos extremos. | - Temperatura actual<br>- Radiación UV<br>- Alertas de calor / tormenta | Peticiones HTTP/REST | JSON |
 | **ES3** | **Local Open Data (OpenDataAPI)** | Servicio de datos abiertos urbanos | Fuente de datos abierta mantenida por autoridades locales o entidades públicas. Proporciona información sobre infraestructura y entorno urbano relevante para la seguridad y el confort peatonal. | - Árboles y zonas de sombra<br>- Fuentes de agua y mobiliario urbano<br>- Puntos de interés (POIs) | Peticiones HTTP/REST o descarga periódica | JSON, CSV, GeoJSON |
 ---
@@ -45,7 +46,6 @@ SafeNav se compone de los siguientes subsistemas:
 ---
 
 # 3. Arquitectura Lógica
-![alt text](logical_architecture.png)
 ## Subsistema S1: User Interface (UI)
 
 | ID | Componente | Descripción General | Responsabilidades Principales | Entradas | Salidas |
@@ -62,12 +62,12 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | ID | Componente | Descripción General | Responsabilidades Principales | Entradas | Salidas |
 |----|-------------|--------------------|-------------------------------|-----------|----------|
 | **C2** | **API Layer (HTTP Controller)** | Capa de entrada del núcleo SafeNav. Expone los servicios del sistema mediante una API REST para la UI. | - Recibir solicitudes HTTP desde la UI.<br>- Validar datos y convertirlos en objetos internos (`RouteRequest`, `Preferences`).<br>- Orquestar la ejecución de los módulos internos (`RE`, `CA`, `DM`).<br>- Devolver resultados en formato JSON. | Solicitudes REST desde la UI. | Respuestas JSON con rutas y puntuaciones. |
-| **C3** | **Routing Engine (RE)** | Núcleo de cálculo de rutas. Genera y optimiza rutas posibles utilizando los datos cartográficos y las condiciones actuales. | - Generar rutas candidatas a partir de los datos del mapa.<br>- Calcular ETA, distancia y costo de trayecto.<br>- Solicitar evaluación contextual al `CA`.<br>- Integrar puntuaciones y devolver rutas finales. | Datos del mapa (desde `DM`).<br>Solicitudes internas (desde `API Layer`). | Rutas optimizadas con puntuaciones. |
-| **C4** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE` y alertas al `API Layer`. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
+| **C3** | **Routing Engine (RE)** | Núcleo de cálculo de rutas. Genera y optimiza rutas posibles utilizando los datos cartográficos y las condiciones actuales. | - Generar rutas candidatas a partir de los datos del mapa.<br>- Calcular ETA, distancia y costo de trayecto.<br>- (Opcionalmente) Solicitar evaluación contextual al `CA` cuando el flujo lo requiera.<br>- Devuelve rutas candidatas o rutas enriquecidas con puntuaciones. | Datos del mapa (desde `DM`).<br>Solicitudes internas (desde `API Layer`). | Rutas optimizadas con puntuaciones. |
+| **C4** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE`. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
 | **C5** | **Data Management (DM)** | Capa de gestión e integración de datos externos. Se encarga de conectar el sistema con las fuentes abiertas (`MapAPI`, `MeteoAPI`, `OpenDataAPI`), procesar los datos y entregarlos en formato interno. | - Obtener y actualizar datos externos.<br>- Preprocesar, normalizar y cachear información.<br>- Proveer datos consistentes a `RE` y `CA`.<br>- Mantener coherencia temporal y semántica de los datos. | Peticiones de datos desde `RE` y `CA`.<br>Datos de servicios externos. | Datos preparados (mapas, clima, contexto urbano). |
 ---
 
-# 3. Especificación de Interfaces
+# 4. Especificación de Interfaces
 [ ] TBD: Analizar fuentes externas de datos y definir el modelo de datos
 
 ## Interfaces Internas (SafeNav Core)
@@ -75,9 +75,12 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | ID | Nombre de Interfaz | Descripción | Datos Principales |
 |----|--------------------|-------------|-------------------|
 | **I_HTTP_Routes** | Interfaz HTTP de Rutas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar rutas, consultar resultados y recibir puntuaciones o alertas. | `RouteRequest`, `RouteResponse` |
-| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `RouteRequest`, `RouteCandidates` |
+| **I_HTTP_Map** | Interfaz HTTP para visualizar mapas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar un mapa para mostrar. | `mapRequest`, `MapDataResponse` |
+| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `Area`, `RouteCandidates`, `RouteScores` |
+| **I_MapView** | Servicio de Solicitud de mapa | Proporciona mapas para ser mostrados y sobre los que trazar las rutas calculadas | `getMapView`, `MapData` |
 | **I_ContextService** | Servicio de Evaluación Contextual | Evalúa las rutas según factores ambientales (temperatura, sombra, alertas) y devuelve puntuaciones agregadas de confort y seguridad. | `RouteCandidates`, `RouteScores` |
-| **I_DataAccess** | Acceso a Datos Internos | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `MapData`, `WeatherData`, `UrbanData` |
+| **I_RoadGraphAccess** | Acceso a grafos de representación de rutas de mapas (nodos y aristas) | Proporciona acceso a estructuras de datos en formato de grafo para representar mapas. | `Area`, `GraphData` |
+| **I_ContextDataAccess** | Acceso a Datos obtenidos de fuentes externas (urbanos y meteorológicos) | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `WeatherData`, `UrbanData` |
 ---
 
 ## Interfaces Externas (Fuentes de Datos)
@@ -89,31 +92,224 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | **I_OpenDataAccess** | Interfaz de Datos Abiertos Urbanos | Solicita datos abiertos municipales: zonas de sombra, árboles, fuentes, parques y puntos de interés urbano. | `OpenDataRequest`, `OpenDataResponse` |
 ---
 
-## 5.3 Relación entre Componentes e Interfaces
+## Relación entre Componentes e Interfaces
 
 | Componente | Interfaces Implementadas | Interfaces Utilizadas |
 |-------------|--------------------------|------------------------|
-| **User Interface (UI)** | — | `I_HTTP_Routes` |
-| **API Layer** | `I_HTTP_Routes` | `I_RoutingService`, `I_ContextService` |
-| **Routing Engine (RE)** | `I_RoutingService` | `I_DataAccess` |
-| **Context Analyzer (CA)** | `I_ContextService` | `I_DataAccess` |
-| **Data Management (DM)** | `I_DataAccess`, `I_MapDataAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |
+| **User Interface (UI)** | — | `I_HTTP_Routes`, `I_HTTP_Map` |
+| **API Layer** | `I_HTTP_Routes`, `I_HTTP_Map` | `I_RoutingService`, `I_MapView` |
+| **Routing Engine (RE)** | `I_RoutingService` | `I_RoadGraphAccess` |
+| **Context Analyzer (CA)** | `I_ContextService` | `I_ContextDataAccess` |
+| **Data Management (DM)** | `I_ContextDataAccess`, `I_RoadGraphAccess`, `I_MapView`, `I_MapDataAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |
 
 ---
 
-## 5.4 Descripción de Datos Principales
+## Descripción de Datos Principales
 
 | Tipo de Dato | Descripción | Campos Relevantes |
 |---------------|--------------|-------------------|
 | **RouteRequest** | Solicitud de cálculo de ruta enviada por el usuario. | `origin: GeoPoint`, `destination: GeoPoint`, `preferences: RoutePreferences` |
-| **RouteResponse** | Respuesta de rutas con puntuaciones y metadatos. | `routes: [RouteCandidate]`, `metadata: ResponseMetadata` |
+| **RouteResponse** | Respuesta de rutas con puntuaciones y metadatos. | `routes: RouteCandidates`, `scores: Optional[RouteScores]`, `metadata: ResponseMetadata` |
 | **RouteCandidates** | Conjunto de rutas candidatas generadas por el motor de rutas. | `route_id`, `geometry`, `eta`, `distance` |
 | **RouteScores** | Puntuaciones de seguridad y confort asignadas por el analizador contextual. | `comfort_score`, `safety_score`, `segment_scores` |
-| **MapData** | Datos cartográficos estructurados internos. | `road_graph`, `tiles`, `metadata` |
+| **GraphData** | Datos cartográficos convertidos en estructura de grafo para planificación. | `Graph`, `metadata` |
+| **MapData** | Datos cartográficos estructurados internos. | `tiles`, `metadata` |
 | **WeatherData** | Datos meteorológicos procesados. | `temperature`, `uv_index`, `alert_level` |
 | **UrbanData** | Datos urbanos relevantes para confort y seguridad. | `shadow_zones`, `water_points`, `POIs` |
 
 ---
 
+# 5. Escenarios Operacionales
 
+Esta sección describe los principales escenarios operacionales del sistema **SafeNav**.  
 
+Cada escenario representa una secuencia concreta de interacciones entre los componentes del sistema durante su ejecución. Los escenarios permiten comprender cómo se materializan las funcionalidades descritas anteriormente y cómo colaboran los distintos módulos del sistema.
+
+Los escenarios se organizan según el ciclo de vida típico de uso del sistema:
+
+1. Visualización inicial del mapa.
+2. Solicitud y generación de rutas candidatas.
+3. Evaluación contextual (opcional).
+4. Ajuste dinámico del mapa.
+5. Visualización de rutas sobre el mapa.
+
+---
+
+## Escenario 0 – Visualización Inicial del Mapa
+
+### Propósito
+
+Mostrar un mapa base por defecto cuando la aplicación se inicia, incluso antes de que el usuario seleccione un origen o un destino.
+
+### Condición de Activación
+
+El usuario abre la aplicación SafeNav.
+
+### Componentes Involucrados
+
+- User Interface (UI)  
+- API Layer  
+- Data Management (DM)  
+- Map Services (MapAPI)
+
+### Descripción del Flujo
+
+1. El usuario abre la aplicación.
+2. La UI envía una solicitud de mapa (`mapRequest`) a la API.
+3. La API solicita a Data Management la obtención del mapa correspondiente al área configurada por defecto.
+4. Data Management obtiene los datos cartográficos desde MapAPI.
+5. Data Management devuelve los datos procesados a la API.
+6. La API responde a la UI con `MapDataResponse`.
+7. La UI renderiza el mapa base al usuario.
+
+### Resultado
+
+El usuario visualiza un mapa inicial de la ciudad configurada, sin rutas activas ni elementos superpuestos.
+
+---
+
+## Escenario 1 – Solicitud y Generación de Rutas Candidatas
+
+### Propósito
+
+Generar rutas candidatas entre un origen y un destino definidos por el usuario.
+
+### Condición de Activación
+
+El usuario selecciona un destino e introduce sus preferencias de ruta.
+
+### Componentes Involucrados
+
+- User Interface (UI)  
+- API Layer  
+- Routing Engine (RE)  
+- Data Management (DM)  
+- Map Services (MapAPI)
+
+### Descripción del Flujo
+
+1. El usuario solicita una ruta.
+2. La UI envía a la API una solicitud `RouteRequest` que incluye origen, destino y preferencias.
+3. La API delega en el Routing Engine el cálculo de rutas candidatas.
+4. El Routing Engine solicita a Data Management los datos cartográficos en formato de grafo (`GraphData`).
+5. Data Management obtiene los datos cartográficos desde MapAPI y los transforma en una representación topológica.
+6. El Routing Engine calcula las rutas candidatas (ETA, distancia, geometría).
+7. El Routing Engine devuelve a la API un conjunto de `RouteCandidates`.
+
+En este punto, el sistema puede activar el Escenario 2 para evaluación contextual o devolver directamente las rutas candidatas.
+
+### Resultado
+
+Se generan rutas candidatas basadas en datos cartográficos y métricas básicas (tiempo estimado y distancia).
+
+---
+
+## Escenario 2 – Evaluación Contextual de Rutas (Opcional)
+
+### Propósito
+
+Evaluar las rutas candidatas utilizando información contextual (meteorológica y urbana) para asignar puntuaciones de seguridad y confort.
+
+### Condición de Activación
+
+Este escenario se activa automáticamente desde la API tras recibir las rutas candidatas.  
+Su ejecución puede depender de la configuración del sistema o de la disponibilidad de datos externos.
+
+### Componentes Involucrados
+
+- API Layer  
+- Routing Engine (RE)  
+- Context Analyzer (CA)  
+- Data Management (DM)  
+- Meteo Data Source (MeteoAPI)  
+- Open Data Source (OpenDataAPI)
+
+### Descripción del Flujo
+
+1. La API solicita al Routing Engine la evaluación contextual de las rutas.
+2. El Routing Engine delega en el Context Analyzer.
+3. El Context Analyzer solicita a Data Management datos meteorológicos y urbanos.
+4. Data Management obtiene los datos desde las fuentes externas correspondientes.
+5. El Context Analyzer calcula puntuaciones de confort y seguridad para cada ruta o segmento.
+6. Las puntuaciones (`RouteScores`) se devuelven al Routing Engine.
+7. El Routing Engine devuelve las puntuaciones a la API.
+8. La API enriquece el `RouteResponse` con los scores.
+
+### Resultado
+
+Las rutas candidatas se enriquecen con puntuaciones de seguridad y confort.  
+Si este escenario no se ejecuta, el sistema devuelve rutas sin evaluación contextual.
+
+---
+
+## Escenario 3 – Recentrado del Mapa tras Selección de Origen y Destino
+
+### Propósito
+
+Ajustar dinámicamente el área visible del mapa cuando el usuario selecciona un origen y un destino.
+
+### Condición de Activación
+
+El usuario selecciona uno o ambos puntos en la interfaz.
+
+### Componentes Involucrados
+
+- User Interface (UI)  
+- API Layer  
+- Data Management (DM)  
+- Map Services (MapAPI)
+
+### Descripción del Flujo
+
+1. El usuario selecciona origen y destino.
+2. La UI determina el área de interés que contiene ambos puntos.
+3. La UI envía una nueva solicitud `mapRequest` a la API con el área ajustada.
+4. La API solicita a Data Management los datos cartográficos correspondientes.
+5. Data Management obtiene los datos desde MapAPI.
+6. La API devuelve `MapDataResponse` a la UI.
+7. La UI renderiza el mapa centrado en el área seleccionada.
+
+### Resultado
+
+El mapa se ajusta dinámicamente al contexto espacial del trayecto solicitado.
+
+---
+
+## Escenario 4 – Superposición de Rutas sobre el Mapa
+
+### Propósito
+
+Visualizar las rutas calculadas y sus puntuaciones sobre el mapa actualmente mostrado.
+
+### Condición de Activación
+
+La API devuelve un `RouteResponse` con rutas candidatas y, opcionalmente, puntuaciones de contexto.
+
+### Componentes Involucrados
+
+- API Layer  
+- User Interface (UI)
+
+### Descripción del Flujo
+
+1. La API devuelve a la UI un `RouteResponse` que contiene rutas candidatas y, si procede, puntuaciones.
+2. La UI renderiza las geometrías de las rutas como superposición sobre el mapa ya cargado.
+3. La UI muestra indicadores visuales asociados a las puntuaciones.
+
+No se solicita un nuevo mapa en este escenario; se reutiliza el mapa actualmente visualizado.
+
+### Resultado
+
+El usuario visualiza las rutas recomendadas superpuestas sobre el mapa, junto con sus indicadores de seguridad y confort.
+
+---
+
+## Trazabilidad entre Escenarios y Funcionalidades
+
+| Escenario | Funcionalidades Relacionadas |
+|------------|------------------------------|
+| Escenario 0 – Visualización Inicial del Mapa | F7, F8 |
+| Escenario 1 – Generación de Rutas Candidatas | F1, F2 |
+| Escenario 2 – Evaluación Contextual | F3, F4, F5 |
+| Escenario 3 – Recentrado del Mapa | F7, F9 |
+| Escenario 4 – Superposición de Rutas | F6, F7 |
