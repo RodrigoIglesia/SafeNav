@@ -1,26 +1,27 @@
 """
 SafeNav Core - API Layer Service
 --------------------------------
-This module initialized the API service using FastAPI, which serves as the entry point
-for the SafeNav Core. It is responsible for registering the controllers (routers) and
-exposing the defined HTTP endpoints for route operations.
+Initializes the FastAPI service and registers HTTP controllers
+for SafeNav Core capabilities.
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.controllers.route_controller import router
+# Controllers
+from api.controllers.route_controller import router as route_router
+from api.controllers.map_controller import router as map_router
+
+# Services
 from routing_engine.service import RoutingEngine
 from interfaces.i_routing_service import IRoutingService
 from data_management.service import DataManagement
 from interfaces.i_map_view import I_MapView
 
+
 def create_api_service() -> FastAPI:
     """
     Create and configure the FastAPI application for the SafeNav Core API.
-
-    Returns:
-        FastAPI: Configured application instance.
     """
 
     app = FastAPI(
@@ -45,32 +46,33 @@ def create_api_service() -> FastAPI:
     )
 
     # =======================================================
-    # Dependency injection — register internal service layers
+    # Dependency injection — internal services
     # =======================================================
 
-    # Single shared DataManagement instance
+    # Shared DataManagement instance
     data_management = DataManagement()
 
-    # Inject DataManagement into RoutingEngine
+    # Routing service depends on DataManagement
     routing_service: IRoutingService = RoutingEngine(data_management)
 
-    # Register services in app state
+    # Map view service is provided by DataManagement
+    map_view_service: I_MapView = data_management
+
+    # Register services in application state
     app.state.routing_service = routing_service
-    app.state.map_view_service = data_management
+    app.state.map_view_service = map_view_service
 
     # =======================================================
-    # Register routers
+    # Register routers (separated by responsibility)
     # =======================================================
-    app.include_router(router)
+    app.include_router(route_router)
+    app.include_router(map_router)
 
     # =======================================================
     # Health check endpoint
     # =======================================================
     @app.get("/health", tags=["System"])
     async def health_check():
-        """
-        Verify the health status of the API service.
-        """
         return {
             "status": "ok",
             "service": "SafeNav Core API"
@@ -79,5 +81,5 @@ def create_api_service() -> FastAPI:
     return app
 
 
-# Main application instance (used by uvicorn ASGI server)
+# ASGI entry point
 app = create_api_service()

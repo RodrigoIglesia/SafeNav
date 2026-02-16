@@ -35,7 +35,7 @@ export async function requestRoute(routeRequest) {
  * @returns {Promise<Object>} MapDataResponse from the backend.
  */
 export async function requestMap(mapRequest) {
-  const response = await fetch(`${API_BASE_URL}/routes/map`, {
+  const response = await fetch(`${API_BASE_URL}/map/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(mapRequest),
