@@ -11,23 +11,16 @@ export default function MapView() {
   const [mapData, setMapData] = useState(null);
   const [error, setError] = useState(null);
 
-  // ==========================================================
-  // Load default map on mount (Scenario 0)
-  // ==========================================================
   useEffect(() => {
     const loadDefaultMap = async () => {
       try {
         const response = await requestMap({
           area: {
-            type: "Polygon",
             coordinates: [
-              [
-                [-3.72, 40.40],
-                [-3.67, 40.40],
-                [-3.67, 40.45],
-                [-3.72, 40.45],
-                [-3.72, 40.40]
-              ]
+              { lat: 40.40, lon: -3.72 },
+              { lat: 40.40, lon: -3.67 },
+              { lat: 40.45, lon: -3.67 },
+              { lat: 40.45, lon: -3.72 }
             ]
           },
           zoom_level: 14,
@@ -45,9 +38,6 @@ export default function MapView() {
     loadDefaultMap();
   }, []);
 
-  // ==========================================================
-  // Error state
-  // ==========================================================
   if (error) {
     return (
       <div style={styles.centered}>
@@ -56,16 +46,10 @@ export default function MapView() {
     );
   }
 
-  // ==========================================================
-  // Loading state
-  // ==========================================================
   if (!mapData) {
     return <LoadingScreen message="Loading SafeNav map..." />;
   }
 
-  // ==========================================================
-  // Calculate center dynamically
-  // ==========================================================
   const center = calculateCenter(mapData.tiles);
 
   return (
@@ -74,13 +58,11 @@ export default function MapView() {
       zoom={mapData.metadata.zoom_level}
       style={{ height: "100vh", width: "100%" }}
     >
-      {/* Base OSM Layer */}
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Tile overlay layer */}
       <TileLayerRenderer tiles={mapData.tiles} />
     </MapContainer>
   );
@@ -95,10 +77,10 @@ function calculateCenter(tiles) {
     return [40.4168, -3.7038]; // fallback
   }
 
-  const coords = tiles[0].bounds.coordinates[0];
+  const coords = tiles[0].bounds.coordinates;
 
-  const lats = coords.map((c) => c[1]);
-  const lons = coords.map((c) => c[0]);
+  const lats = coords.map((c) => c.lat);
+  const lons = coords.map((c) => c.lon);
 
   return [
     (Math.min(...lats) + Math.max(...lats)) / 2,
