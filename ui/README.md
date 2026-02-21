@@ -1,3 +1,13 @@
+# UI architecture
+src/
+ ├── api.js              ← HTTP interface layer
+ ├── main.jsx            ← Bootstraps react (default)
+ ├── App.jsx             ← Root container
+ ├── components/
+ │    ├── MapView.jsx    ← Orchestrates map
+ │    ├── TileLayerRenderer.jsx
+ │    └── LoadingScreen.jsx
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
