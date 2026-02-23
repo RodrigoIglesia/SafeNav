@@ -14,8 +14,9 @@ from domain.dto.map_data import (
     MapMetadata,
     GraphData,
     Edge,
+    Tile
 )
-from domain.dto.common import GeoPoint
+from domain.dto.common import GeoPoint, Polygon
 
 
 class DataManagement(I_MapView, I_RoadGraphAccess):
@@ -35,8 +36,7 @@ class DataManagement(I_MapView, I_RoadGraphAccess):
         )
 
         map_data = MapData(
-            road_graph=self._build_mock_graph(),
-            tiles=[],
+            tiles=self._build_mock_tiles(map_request), # TODO: Replace with get_graph_data() for real tile data retrieval
             metadata=metadata,
         )
 
@@ -54,8 +54,38 @@ class DataManagement(I_MapView, I_RoadGraphAccess):
         return self._build_mock_graph()
 
     # ==========================================================
-    # Internal helper: build a tiny mock graph
+    # Internal helper: build a tiny mock graph and tiles
     # ==========================================================
+    def _build_mock_tiles(self, map_request) -> List[Tile]:
+
+        tile_1 = Tile(
+            id="tile_1",
+            bounds=Polygon(
+                coordinates=[
+                    GeoPoint(lat=40.40, lon=-3.72),
+                    GeoPoint(lat=40.40, lon=-3.70),
+                    GeoPoint(lat=40.42, lon=-3.70),
+                    GeoPoint(lat=40.42, lon=-3.72),
+                    GeoPoint(lat=40.40, lon=-3.72),  # close polygon
+                ]
+            )
+        )
+
+        tile_2 = Tile(
+            id="tile_2",
+            bounds=Polygon(
+                coordinates=[
+                    GeoPoint(lat=40.42, lon=-3.70),
+                    GeoPoint(lat=40.42, lon=-3.68),
+                    GeoPoint(lat=40.44, lon=-3.68),
+                    GeoPoint(lat=40.44, lon=-3.70),
+                    GeoPoint(lat=40.42, lon=-3.70),
+                ]
+            )
+        )
+
+        return [tile_1, tile_2]
+
     def _build_mock_graph(self) -> GraphData:
         """
         Creates a small mock graph with two connected nodes.

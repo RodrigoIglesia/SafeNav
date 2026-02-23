@@ -42,7 +42,6 @@ class RouteScores {
 }
 
 class MapData {
-+ road_graph: Graph
 + tiles: [Tile]
 + metadata: MapMetadata
 }

@@ -1,4 +1,6 @@
 
+[ ] TODO: Hay que eliminar I_MapView con Data Management. La interfaz la implementa directamente la UI con OSM a través de Leaflet. Simplifica el diseño y simplifica la implementación.
+
 # 1. Descripción del Sistema
 El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo proporcionar a los peatones rutas **seguras o confortables** en entornos urbanos.
 
