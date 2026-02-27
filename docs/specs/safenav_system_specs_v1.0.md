@@ -150,19 +150,14 @@ El usuario abre la aplicación SafeNav.
 ### Componentes Involucrados
 
 - User Interface (UI)  
-- API Layer  
-- Data Management (DM)  
 - Map Services (MapAPI)
 
 ### Descripción del Flujo
 
 1. El usuario abre la aplicación.
-2. La UI envía una solicitud de mapa (`mapRequest`) a la API.
-3. La API solicita a Data Management la obtención del mapa correspondiente al área configurada por defecto.
-4. Data Management obtiene los datos cartográficos desde MapAPI.
-5. Data Management devuelve los datos procesados a la API.
-6. La API responde a la UI con `MapDataResponse`.
-7. La UI renderiza el mapa base al usuario.
+2. La UI envía una solicitud de mapa (`mapDataAccess`) a la API externa de mapas. Esta solicitud se ejecuta a través de la librería Leaflet
+3. Map API devuelve la imagen OSM del mapa a la UI.
+4. La UI renderiza el mapa base al usuario.
 
 ### Resultado
 

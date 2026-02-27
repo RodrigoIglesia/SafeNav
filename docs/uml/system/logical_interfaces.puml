@@ -23,16 +23,11 @@ package "SafeNav internal interfaces" as Internal {
   IHTTP : + create_route(request : RouteRequest) : RouteResponse
   UI -down- IHTTP : HTTP/JSON
 
-  interface "I_HTTP_Map" as IHTTPMap
-  IHTTPMap : + mapRequest(request : mapRequest) : MapDataResponse
-  UI -down- IHTTPMap : HTTP/JSON
-
   ' === SafeNav Core ===
   component "SafeNav Core" <<system>> as Core {
     
     component "API Layer\n(HTTP Controller)" as API
     IHTTP -- API : implements
-    IHTTPMap -- API : implements
 
     component "Routing Engine\n(RE)" as RE
     interface "I_RoutingService" as IRoute
@@ -50,18 +45,15 @@ package "SafeNav internal interfaces" as Internal {
     component "Data Management (DM)" as DM
     interface "I_RoadGraphAccess" as IGraph
     IGraph : + getGraphData(area : Area) : GraphData
-    interface "I_MapView" as IMapView
-    IMapView : + getMapView(area : Area) : MapData
     interface "I_ContextDataAccess" as IData
     IData : + getWeatherData(time : DateTime) : WeatherData
     IData : + getUrbanData(area : Area) : UrbanData
 
     RE --> IGraph : uses
     CA --> IData : uses
-    API --> IMapView : uses
 
     IGraph -- DM : implements
-    IMapView -- DM : implements
+    
     IData -- DM : implements
   }
 }
@@ -69,24 +61,28 @@ package "SafeNav internal interfaces" as Internal {
 ' === External Data Sources ===
 package "External Data Sources" as External {
   top to bottom direction
-  component "Map Services (MapAPI)" <<external>> as MapAPI
+  component "Map Services (MapAPI - Open Street Map)" <<external>> as MapAPI
   component "Meteo Sources (MeteoAPI)" <<external>> as MeteoAPI
   component "Local Open Data (OpenDataAPI)" <<external>> as OpenDataAPI
 }
 
-' === External interfaces implemented by DM ===
+' === External interfaces implemented by UI ===
 interface "I_MapDataAccess" as IMapData
 IMapData : + fetchMapData(area : Area) : MapData
+
+UI -- IMapData : implements \n(through leaflet)
+IMapData -- MapAPI : E1: Map data
+
+' === External interfaces implemented by DM ===
+
 interface "I_MeteoDataAccess" as IMeteoData
 IMeteoData : + fetchWeatherData(area : Area, time : DateTime) : WeatherData
 interface "I_OpenDataAccess"  as IOpenData
 IOpenData : + fetchUrbanData(area : Area, dataType : String) : OpenData
 
-DM -- IMapData : implements
 DM -- IMeteoData : implements
 DM -- IOpenData : implements
 
-IMapData -- MapAPI : E1: Map data
 IMeteoData -- MeteoAPI : E2: Weather data
 IOpenData -- OpenDataAPI : E3: Urban data
 
