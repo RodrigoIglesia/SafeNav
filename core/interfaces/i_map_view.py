@@ -1,5 +1,5 @@
 # interfaces/map_view.py
-
+#TODO: Remove as this interface is already implemented by Leaflet
 from typing import Protocol
 from domain.dto.map_data import MapData
 from domain.dto.map_data import MapRequest

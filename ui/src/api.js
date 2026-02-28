@@ -26,23 +26,3 @@ export async function requestRoute(routeRequest) {
 
   return response.json();
 }
-
-/**
- * Sends a map request to the SafeNav Core API.
- *
- * @param {Object} mapRequest - Object describing the area and zoom level.
- * @returns {Promise<Object>} MapDataResponse from the backend.
- */
-export async function requestMap(mapRequest) {
-  const response = await fetch(`${API_BASE_URL}/map/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(mapRequest),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Map API Error: ${response.status}`);
-  }
-
-  return response.json();
-}

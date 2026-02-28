@@ -1,0 +1,94 @@
+/* src/components/FloatingRoutePanel.css */
+
+.route-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+
+  /* Transparent glass effect */
+  background: rgba(255, 255, 255, 0.85);
+  opacity: 0.9;
+
+  /* Optional blur for modern look */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border-radius: 10px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+  width: 300px;
+
+  font-family: sans-serif;
+
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.route-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 10px;
+
+  font-weight: bold;
+
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.route-panel-body {
+  padding: 10px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.route-panel input {
+  padding: 6px;
+
+  border-radius: 5px;
+
+  border: 1px solid #ccc;
+
+  background: rgba(255,255,255,0.9);
+}
+
+.route-panel input:focus {
+  outline: none;
+  border: 1px solid #999;
+}
+
+/* Light grey buttons */
+.route-panel button {
+
+  padding: 6px;
+
+  border: none;
+
+  border-radius: 5px;
+
+  background: #e0e0e0;
+
+  color: #333;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.route-panel button:hover {
+
+  background: #d0d0d0;
+}
+
+.route-panel button:active {
+
+  background: #c0c0c0;
+}
+
+.route-panel.collapsed {
+  height: auto;
+}

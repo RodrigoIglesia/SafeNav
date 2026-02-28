@@ -1,99 +1,64 @@
 // src/components/MapView.jsx
 
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer } from "react-leaflet";
-import { requestMap } from "../api";
-import TileLayerRenderer from "./TileLayerRenderer";
-import LoadingScreen from "./LoadingScreen";
+//TODO: Download local tiles to test offline
+import { useState, useRef } from "react";
+import { MapContainer, TileLayer, ZoomControl } from "react-leaflet";
+import FloatingRoutePanel from "./FloatingRoutePanel";
+import MapStyleSelector from "./MapStyleSelector";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView() {
-  const [mapData, setMapData] = useState(null);
-  const [error, setError] = useState(null);
+  const center = [40.4168, -3.7038];
+  const zoom = 13;
 
-  useEffect(() => {
-    const loadDefaultMap = async () => {
-      try {
-        const response = await requestMap({
-          area: {
-            coordinates: [
-              { lat: 40.40, lon: -3.72 },
-              { lat: 40.40, lon: -3.67 },
-              { lat: 40.45, lon: -3.67 },
-              { lat: 40.45, lon: -3.72 }
-            ]
-          },
-          zoom_level: 14,
-          include_tiles: true,
-          include_metadata: true,
-        });
+  const [tileUrl, setTileUrl] = useState(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  );
 
-        setMapData(response.map);
-      } catch (err) {
-        console.error("Map loading error:", err);
-        setError(err.message);
-      }
-    };
+  const errorTimeoutRef = useRef(null);
+  const successTimeoutRef = useRef(null);
+  const [osmReachable, setOsmReachable] = useState(true);
 
-    loadDefaultMap();
-  }, []);
+  const handleTileLoad = () => {
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+    successTimeoutRef.current = setTimeout(() => setOsmReachable(true), 200);
+  };
 
-  if (error) {
-    return (
-      <div style={styles.centered}>
-        <p style={{ color: "red" }}>❌ {error}</p>
-      </div>
-    );
-  }
+  const handleTileError = () => {
+    if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+    errorTimeoutRef.current = setTimeout(() => setOsmReachable(false), 1500);
+  };
 
-  if (!mapData) {
-    return <LoadingScreen message="Loading SafeNav map..." />;
-  }
-
-  const center = calculateCenter(mapData.tiles);
+  const handleRouteChange = ({ origin, destination }) => {
+    console.log("Route requested:", origin, destination);
+  };
 
   return (
-    <MapContainer
-      center={center}
-      zoom={mapData.metadata.zoom_level}
-      style={{ height: "100vh", width: "100%" }}
-    >
-      <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <div style={{ position: "relative" }}>
+      {!osmReachable && (
+        <div className="loading-screen">Connecting to OpenStreetMap...</div>
+      )}
 
-      <TileLayerRenderer tiles={mapData.tiles} />
-    </MapContainer>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height: "100vh", width: "100%" }}
+        zoomControl={false}
+      >
+        <TileLayer
+          url={tileUrl}
+          attribution="&copy; OpenStreetMap contributors"
+          eventHandlers={{
+            tileload: handleTileLoad,
+            tileerror: handleTileError
+          }}
+        />
+        <ZoomControl position="topright" />
+      </MapContainer>
+
+      <FloatingRoutePanel onRouteChange={handleRouteChange} />
+
+      <MapStyleSelector onChange={(url) => setTileUrl(url)} />
+    </div>
   );
 }
-
-// ==========================================================
-// Helpers
-// ==========================================================
-
-function calculateCenter(tiles) {
-  if (!tiles || tiles.length === 0) {
-    return [40.4168, -3.7038]; // fallback
-  }
-
-  const coords = tiles[0].bounds.coordinates;
-
-  const lats = coords.map((c) => c.lat);
-  const lons = coords.map((c) => c.lon);
-
-  return [
-    (Math.min(...lats) + Math.max(...lats)) / 2,
-    (Math.min(...lons) + Math.max(...lons)) / 2,
-  ];
-}
-
-const styles = {
-  centered: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontSize: "1.1rem",
-  },
-};
