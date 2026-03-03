@@ -89,6 +89,26 @@
   background: #c0c0c0;
 }
 
+.map-style-selector select {
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background: rgba(255,255,255,0.9);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.map-style-selector select:hover {
+  border-color: #999;
+}
+
+.map-style-selector select:focus {
+  outline: none;
+  border-color: #666;
+}
+
 .route-panel.collapsed {
   height: auto;
 }
+

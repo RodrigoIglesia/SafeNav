@@ -9,7 +9,14 @@ participant "Road Graph Access" as IGraph
 participant "Data Management" as DM
 participant "Map Services\n(MapAPI)" as MapAPI
 
-User -> UI : Go Home request
+alt Location ON and Go Home request
+    User -> UI : Go Home request
+    note right of User: Origin = Location, Destination = selection
+else
+    User -> UI : Origin and destination
+end
+
+note across: Call scenario 1 - reescale map to origin and destination
 
 UI -> API : I_HTTP_Routes: create_route(RouteRequest)
 
@@ -25,9 +32,11 @@ DM --> RE : I_Road_Graph_Access: GraphData
 RE --> API : I_Routing_Service: RouteCandidates
 
 alt Contextual evaluation
-    note across: Scenario 2 will be triggered here for contextual route evaluation
+    note across: Scenario 3 will be triggered here for contextual route evaluation
 
 else No contextual evaluation
-    API --> UI : I_HTTP_Routes: RouteResponse\n(routes only)
+   note across: Do nothing
 end
+API --> UI : I_HTTP_Routes: RouteResponse\n(routes only)
+
 @enduml

@@ -1,8 +1,8 @@
 /* src/components/MapStyleSelector.css */
 .map-style-selector {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
+    top: 20px;
+    left: 330px;
     z-index: 1000;
     /* Transparent glass effect */
     background: rgba(255, 255, 255, 0.85);

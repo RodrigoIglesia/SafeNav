@@ -11,7 +11,6 @@ export default function MapStyleSelector({ onChange }) {
 
   return (
     <div className="map-style-selector">
-      <span>Map Style:</span>
       {styles.map((style) => (
         <button
           key={style.name}

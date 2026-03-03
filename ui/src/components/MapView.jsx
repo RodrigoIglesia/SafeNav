@@ -4,7 +4,6 @@
 import { useState, useRef } from "react";
 import { MapContainer, TileLayer, ZoomControl } from "react-leaflet";
 import FloatingRoutePanel from "./FloatingRoutePanel";
-import MapStyleSelector from "./MapStyleSelector";
 import "leaflet/dist/leaflet.css";
 
 export default function MapView() {
@@ -30,6 +29,7 @@ export default function MapView() {
   };
 
   const handleRouteChange = ({ origin, destination }) => {
+    //TODO: Change this for route request API call
     console.log("Route requested:", origin, destination);
   };
 
@@ -55,10 +55,10 @@ export default function MapView() {
         />
         <ZoomControl position="topright" />
       </MapContainer>
-
-      <FloatingRoutePanel onRouteChange={handleRouteChange} />
-
-      <MapStyleSelector onChange={(url) => setTileUrl(url)} />
+      <FloatingRoutePanel 
+        onRouteChange={handleRouteChange}
+        onMapStyleChange={setTileUrl}
+      />
     </div>
   );
 }

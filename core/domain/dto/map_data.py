@@ -33,7 +33,7 @@ class GraphData(BaseModel):
     edges: List[Edge] = Field(..., description="Directed edges connecting graph nodes")
 
 
-
+#TODO: Tile, MapMetadata, MapData, MapRequest and MapDataResponse are not currently used >> To be removed
 # === Tile data ===
 
 class Tile(BaseModel):
