@@ -1,6 +1,6 @@
 @startuml
 note across
-Scenario 2 – Contextual Route Evaluation
+Scenario 3 – Contextual Route Evaluation
 "This sequence diagram illustrates the internal contextual evaluation of route
 candidates performed by SafeNav. This scenario is automatically triggered by
 the API Layer after route candidates are generated and may be skipped depending

@@ -23,6 +23,7 @@ package "External Data Sources" as External {
 ' === Interactions ===
 UI --> CoreSystem : HTTP/REST API\n(Route requests & results)
 CoreSystem --> UI : Responses (routes, alerts, scores)
+UI --> MapAPI : Request map to show (Leaflet)
 
 CoreSystem --> [MapAPI] : Map & street data
 CoreSystem --> [MeteoAPI] : Weather data

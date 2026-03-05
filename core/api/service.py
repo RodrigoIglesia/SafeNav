@@ -10,14 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Controllers
 from api.controllers.route_controller import router as route_router
-from api.controllers.map_controller import router as map_router
 
 # Services
 from routing_engine.service import RoutingEngine
 from interfaces.i_routing_service import IRoutingService
 from data_management.service import DataManagement
-from interfaces.i_map_view import I_MapView
-
 
 def create_api_service() -> FastAPI:
     """
@@ -55,18 +52,13 @@ def create_api_service() -> FastAPI:
     # Routing service depends on DataManagement
     routing_service: IRoutingService = RoutingEngine(data_management)
 
-    # Map view service is provided by DataManagement
-    map_view_service: I_MapView = data_management
-
     # Register services in application state
     app.state.routing_service = routing_service
-    app.state.map_view_service = map_view_service
 
     # =======================================================
     # Register routers (separated by responsibility)
     # =======================================================
     app.include_router(route_router)
-    app.include_router(map_router)
 
     # =======================================================
     # Health check endpoint

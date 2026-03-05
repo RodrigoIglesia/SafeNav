@@ -7,41 +7,12 @@ SafeNav Core - Data Management Service
 from datetime import datetime
 from typing import List
 
-from interfaces.i_map_view import I_MapView
 from interfaces.i_road_graph_access import I_RoadGraphAccess
-from domain.dto.map_data import (
-    MapData,
-    MapMetadata,
-    GraphData,
-    Edge,
-)
+from domain.dto.map_data import GraphData, Edge
 from domain.dto.common import GeoPoint
 
 
-class DataManagement(I_MapView, I_RoadGraphAccess):
-    """
-    Mock implementation of Data Management.
-    Provides fake map and graph data for development and testing.
-    """
-
-    # ==========================================================
-    # I_MapView implementation
-    # ==========================================================
-    def get_map_view(self, map_request):
-        metadata = MapMetadata(
-            source="MockMapProvider",
-            date=datetime.utcnow(),
-            zoom_level=map_request.zoom_level,
-        )
-
-        map_data = MapData(
-            road_graph=self._build_mock_graph(),
-            tiles=[],
-            metadata=metadata,
-        )
-
-        return map_data
-
+class DataManagement(I_RoadGraphAccess):
 
     # ==========================================================
     # I_RoadGraphAccess implementation
@@ -53,9 +24,7 @@ class DataManagement(I_MapView, I_RoadGraphAccess):
 
         return self._build_mock_graph()
 
-    # ==========================================================
-    # Internal helper: build a tiny mock graph
-    # ==========================================================
+
     def _build_mock_graph(self) -> GraphData:
         """
         Creates a small mock graph with two connected nodes.

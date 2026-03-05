@@ -1,31 +1,34 @@
 # SafeNav
 SafeNav is a intelligent Route Planning system which ensures pedestrians' safety. SafeNav aims to increase pedestrians' safe in urban environments, in zones where infraestructure is limited, or under extremely hot envirnomental conditions -such as spanish cities in summer-. SafeNav combines information from OpenData platfo
 
-# 🌞 SafeNav – Guía de Ejecución y Funcionamiento Básico
+# SafeNav – Execution and basic usage guide
 
-Esta guía describe:
+This guide describes:
 
-1. Cómo lanzar el sistema con Docker Compose  
-2. Cómo funcionan las redes entre contenedores  
-3. Cómo se realizan las llamadas HTTP entre la UI y el backend  
+1. How to launch the system (Docker Compose)
+2. How container networks are set up 
+3. How UI and Backend interact with each other through API endpoints
 
 ---
 
 # 🐳 1. Cómo lanzar el sistema
 
 ## 📦 Requisitos
-
+Pre-requisitos:
 - Docker
 - Docker Compose
 
 Verificar instalación:
 
-docker --version
+1. docker --version
 docker compose version
-## 🚀 Iniciar el sistema
-Desde la raíz del proyecto (donde se encuentra docker-compose.yml):
 
-docker compose up --build
+## 🚀 Iniciar el sistema
+1. Clone the repository from Github.
+
+2. From the project´s root (where docker-compose.yml is located):
+
+   - $docker compose up --build
 Este comando:
 
 Construye el servicio safenav-core (backend FastAPI)
@@ -37,8 +40,9 @@ Inicia ambos contenedores
 Expone los siguientes puertos:
 
 Servicio	URL
-Backend API	http://localhost:8000
-Frontend UI	http://localhost:5173
+- Backend API	http://localhost:8000
+- Frontend UI	http://localhost:5173
+
 ## 🛑 Detener el sistema
 docker compose down
 # 🌐 2. Puntos de acceso

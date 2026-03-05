@@ -7,6 +7,7 @@ Defines internal data structures related to map and topological data:
 - Tile: map area representation
 - MapMetadata: information about data source and zoom level
 """
+# TODO: Change to GeoJSON format for better compatibility with mapping libraries and standards.
 
 from pydantic import BaseModel, Field
 from typing import List
@@ -32,7 +33,7 @@ class GraphData(BaseModel):
     edges: List[Edge] = Field(..., description="Directed edges connecting graph nodes")
 
 
-
+#TODO: Tile, MapMetadata, MapData, MapRequest and MapDataResponse are not currently used >> To be removed
 # === Tile data ===
 
 class Tile(BaseModel):
@@ -53,7 +54,7 @@ class MapMetadata(BaseModel):
 # === Main map data container ===
 
 class MapData(BaseModel):
-    """Container for all map and topological data required by the Routing Engine."""
+    """Container for map visualization data."""
     tiles: List[Tile] = Field(..., description="List of map tiles that compose the area of interest")
     metadata: MapMetadata = Field(..., description="Metadata about the map dataset")
 
