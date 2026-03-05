@@ -3,6 +3,11 @@
 import { useState } from "react";
 import "./FloatingRoutePanel.css";
 
+import { requestRoute } from "../api.js";
+
+let originTimeout;
+let destinationTimeout;
+
 // Geocode address to coordinates
 async function geocode(address) {
   const response = await fetch(
@@ -18,13 +23,26 @@ async function geocode(address) {
 
 // Search places for autocomplete
 async function searchPlaces(query) {
-  if (!query) return [];
+  if (!query || query.length < 3) return [];
 
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`
-  );
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`,
+      {
+        headers: {
+          Accept: "application/json"
+        }
+      }
+    );
 
-  return await response.json();
+    if (!response.ok) return [];
+
+    return await response.json();
+
+  } catch (error) {
+    console.error("Search failed:", error);
+    return [];
+  }
 }
 
 export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) {
@@ -38,42 +56,72 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) 
   const [expanded, setExpanded] = useState(true);
 
   const styles = [
+    { name: "Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
     { name: "Std", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
     { name: "Dark", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
-    { name: "Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
     { name: "Topo", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
   ];
 
   const handleSubmit = async () => {
-
     if (!origin || !destination) return;
+    try {
+      const originCoords = await geocode(origin);
+      const destinationCoords = await geocode(destination);
 
-    const originCoords = await geocode(origin);
-    const destinationCoords = await geocode(destination);
+      if (!originCoords || !destinationCoords) {
+        alert("Could not find one of the locations.");
+        return;
+      }
 
-    if (!originCoords || !destinationCoords) {
-      alert("Could not find one of the locations.");
-      return;
+      const routeRequest = {
+        origin: {
+          lat: originCoords[0],
+          lon: originCoords[1],
+        },
+        destination: {
+          lat: destinationCoords[0],
+          lon: destinationCoords[1],
+        },
+        preferences: null
+      };
+
+      const routeResponse = await requestRoute(routeRequest);
+
+      console.log("Route response:", routeResponse);
+
+      // opcional: enviar al mapa
+      onRouteChange({
+        origin: originCoords,
+        destination: destinationCoords,
+        route: routeResponse
+      });
+
+    } catch (error) {
+      console.error("Route request failed:", error);
+      alert("Error requesting route.");
     }
-
-    onRouteChange({
-      origin: originCoords,
-      destination: destinationCoords,
-    });
   };
 
-  const handleOriginChange = async (value) => {
+  const handleOriginChange = (value) => {
     setOrigin(value);
 
-    const results = await searchPlaces(value);
-    setOriginSuggestions(results);
+    clearTimeout(originTimeout);
+
+    originTimeout = setTimeout(async () => {
+      const results = await searchPlaces(value);
+      setOriginSuggestions(results);
+    }, 300);
   };
 
-  const handleDestinationChange = async (value) => {
+  const handleDestinationChange = (value) => {
     setDestination(value);
 
-    const results = await searchPlaces(value);
-    setDestinationSuggestions(results);
+    clearTimeout(destinationTimeout);
+
+    destinationTimeout = setTimeout(async () => {
+      const results = await searchPlaces(value);
+      setDestinationSuggestions(results);
+    }, 300);
   };
 
   return (
