@@ -112,3 +112,21 @@
   height: auto;
 }
 
+.suggestions {
+  background: white;
+  border: 1px solid #ddd;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 6px;
+}
+
+.suggestion-item {
+  padding: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.suggestion-item:hover {
+  background: #f0f0f0;
+}
+
