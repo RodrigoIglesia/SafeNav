@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 
 /**
- * Sends a route request to the SafeNav Core API.
+ * Function to send a route request to the SafeNav Core API.
  *
  * @param {Object} routeRequest - Object with origin, destination, and preferences.
  * @returns {Promise<Object>} Route response from the backend.
