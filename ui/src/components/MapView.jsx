@@ -6,7 +6,6 @@ import {
   TileLayer,
   ZoomControl,
   Marker,
-  Polyline,
   useMap
 } from "react-leaflet";
 import L from "leaflet";
@@ -115,10 +114,6 @@ export default function MapView() {
           <Marker position={route.destination} />
         )}
 
-        {/* Simple route line */}
-        {route.origin && route.destination && (
-          <Polyline positions={[route.origin, route.destination]} />
-        )}
       </MapContainer>
 
       <FloatingRoutePanel

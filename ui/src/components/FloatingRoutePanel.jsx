@@ -73,6 +73,7 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) 
         return;
       }
 
+      // Generate request message for API
       const routeRequest = {
         origin: {
           lat: originCoords[0],
@@ -85,6 +86,7 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) 
         preferences: null
       };
 
+      // Create request
       const routeResponse = await requestRoute(routeRequest);
 
       console.log("Route response:", routeResponse);
