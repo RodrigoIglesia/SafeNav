@@ -7,7 +7,6 @@ Defines internal data structures related to map and topological data:
 - Tile: map area representation
 - MapMetadata: information about data source and zoom level
 """
-# TODO: Change to GeoJSON format for better compatibility with mapping libraries and standards.
 
 from pydantic import BaseModel, Field
 from typing import List

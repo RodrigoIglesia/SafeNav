@@ -177,7 +177,3 @@ No hay errores 422
 
 No hay errores 404 inesperados
 ---
-
-
-
-TODO Mock terminado, debe comenzarse por implementar los escenarios operacionales >> Mergear la rama savenav_core_common >> Crear una nueva rama con el nombre del escenario

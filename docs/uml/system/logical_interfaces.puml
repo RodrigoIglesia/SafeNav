@@ -1,4 +1,3 @@
-[ ] TODO: Hay que cambiar la interfaz I_MApView. No es con DataManagement. La implementa la UI directamente con OSM
 @startuml
 !include docs/uml/theme.puml
 skinparam linetype ortho

@@ -21,6 +21,81 @@ El intérprete de Python reconoce con Typing que las clases que comparten los mi
 Los servicios SOLO deben implementar los métodos de la interfaz, se asegura que el contrato se cumple
 IHTTPRoutes no se implementa como interfaz de Python, si no FastAPI
 
+### Interface based design
+🧠 Big Picture
+
+Your RoutingEngine is doing this:
+
+“Given origin and destination, ask for a graph, compute the shortest path, return a route.”
+
+That’s it.
+
+But the important part is how it does it — using interfaces.
+
+🎯 What is routing_service?
+
+In your API layer you probably have something like:
+
+routing_service: IRoutingService = request.app.state.routing_service
+
+And during app startup:
+
+routing_service = RoutingEngine(data_management)
+
+So:
+
+routing_service is an instance of RoutingEngine
+
+But the API sees it as IRoutingService
+
+That is the key.
+
+🧱 What is an Interface Here?
+
+You have:
+
+class IRoutingService(Protocol):
+    def calculate_routes(...)
+    def get_route_scores(...)
+
+This is a contract.
+
+It says:
+
+“Anything that claims to be an IRoutingService must implement these methods.”
+
+Then you write:
+
+class RoutingEngine(IRoutingService):
+
+That means:
+
+RoutingEngine promises to implement that contract.
+
+🧠 Why Is This Important?
+
+Because now the API does NOT depend on RoutingEngine.
+
+It depends on:
+
+IRoutingService
+
+That means:
+
+You could replace:
+
+RoutingEngine
+
+with:
+
+AdvancedRoutingEngine
+MLRoutingEngine
+RemoteRoutingEngine
+
+And the API wouldn’t change.
+
+That is dependency inversion.
+
 
 ## Estructura de Repositorio
 
@@ -75,3 +150,9 @@ core/
 ├── DOCKERFILE
 |
 docker-compose.yml
+
+## External Data
+### Graph Data
+**OSMnx**
+https://wiki.openstreetmap.org/wiki/OSMnx
+Paquete de OpenStreetMap que permite obtener grafos complejos
