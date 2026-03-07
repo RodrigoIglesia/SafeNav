@@ -130,3 +130,34 @@
   background: #f0f0f0;
 }
 
+.city-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.city-selector label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.city-selector select {
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background: rgba(255,255,255,0.9);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.city-selector select:hover {
+  border-color: #999;
+}
+
+.city-selector select:focus {
+  outline: none;
+  border-color: #666;
+}

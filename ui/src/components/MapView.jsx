@@ -26,7 +26,7 @@ L.Icon.Default.mergeOptions({
 const DEFAULT_CENTER = [40.4168, -3.7038];
 const DEFAULT_ZOOM = 13;
 
-// Component that automatically adjusts the map view
+// Component to fit map bounds to route
 function FitBounds({ origin, destination }) {
   const map = useMap();
 
@@ -36,6 +36,20 @@ function FitBounds({ origin, destination }) {
       map.fitBounds(bounds, { padding: [80, 80] });
     }
   }, [origin, destination, map]);
+
+  return null;
+}
+
+// Component that automatically adjusts the map view
+function FitCityBounds({ bounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+      map.setMaxBounds(bounds);
+    }
+  }, [bounds, map]);
 
   return null;
 }
@@ -53,6 +67,8 @@ export default function MapView() {
   const errorTimeoutRef = useRef(null);
   const successTimeoutRef = useRef(null);
   const [osmReachable, setOsmReachable] = useState(true);
+
+  const [cityBounds, setCityBounds] = useState(null);
 
   const handleTileLoad = () => {
     if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
@@ -73,6 +89,15 @@ export default function MapView() {
     });
   };
 
+  const handleCityChange = (cityConfig) => {
+    const b = cityConfig.bounds;
+
+    setCityBounds([
+      [b.south, b.west],
+      [b.north, b.east]
+    ]);
+  };
+
   return (
     <div style={{ position: "relative" }}>
       {!osmReachable && (
@@ -85,7 +110,6 @@ export default function MapView() {
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}
         style={{ height: "100vh", width: "100%" }}
-        zoomControl={false}
       >
         <TileLayer
           url={tileUrl}
@@ -95,6 +119,8 @@ export default function MapView() {
             tileerror: handleTileError
           }}
         />
+
+        <FitCityBounds bounds={cityBounds} />
 
         <ZoomControl position="topright" />
 
@@ -119,6 +145,7 @@ export default function MapView() {
       <FloatingRoutePanel
         onRouteChange={handleRouteChange}
         onMapStyleChange={setTileUrl}
+        onCityChange={handleCityChange}
       />
     </div>
   );

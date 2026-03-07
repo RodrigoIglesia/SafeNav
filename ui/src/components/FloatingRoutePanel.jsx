@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import "./FloatingRoutePanel.css";
-
 import { requestRoute } from "../api.js";
+import citiesConfig from "../config/cities.json";
 
 let originTimeout;
 let destinationTimeout;
+
 
 // Geocode address to coordinates
 async function geocode(address) {
@@ -45,7 +46,7 @@ async function searchPlaces(query) {
   }
 }
 
-export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) {
+export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, onCityChange }) {
 
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
@@ -54,6 +55,7 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) 
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
 
   const [expanded, setExpanded] = useState(true);
+  const [selectedCity, setSelectedCity] = useState(citiesConfig.default);
 
   const styles = [
     { name: "Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
@@ -142,7 +144,30 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange }) 
 
       {expanded && (
         <div className="route-panel-body">
+          {/* CITY SELECTOR */}
+          <div className="city-selector">
+            <select
+              value={selectedCity}
+              onChange={(e) => {
+                const cityKey = e.target.value;
+                setSelectedCity(cityKey);
 
+                if (onCityChange) {
+                  onCityChange(
+                    citiesConfig.cities[cityKey]
+                  );
+                }
+              }}
+            >
+              {Object.entries(citiesConfig.cities).map(
+                ([key, city]) => (
+                  <option key={key} value={key}>
+                    {city.label}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
           {/* ORIGIN */}
           <input
             type="text"
