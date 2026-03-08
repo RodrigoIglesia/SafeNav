@@ -6,6 +6,8 @@ Implements the IRoutingService interface.
 This version returns mock data for development/testing.
 """
 
+# TODO: Routing Engine must send city instead of area to data management.
+
 from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
 from domain.dto.common import GeoPoint, Polygon
 from datetime import datetime, timezone
@@ -31,8 +33,8 @@ class RoutingEngine(IRoutingService):
         print(f"RE: Calculating routes from {request.origin} to {request.destination} with preferences {request.preferences}")
 
         # Calculate Area to request the Graph to calculate routes
-        area = self._build_area_from_points(request.origin, request.destination)
-        graph = self.road_graph_access.get_graph_data(area)
+        # area = self._build_area_from_points(request.origin, request.destination) # TODO: Remove
+        graph = self.road_graph_access.get_graph_data() # TODO: Change interfaces to pass city in the future
         print(f"RE: Retrieved graph with {len(graph.nodes)} nodes and {len(graph.edges)} edges")
 
         # Estimate route

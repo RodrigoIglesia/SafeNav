@@ -12,11 +12,12 @@ class I_RoadGraphAccess(Protocol):
     Implemented by Data Management.
     """
 
-    def get_graph_data(self, area: Polygon) -> GraphData:
+    def get_graph_data() -> GraphData:
         """
         Retrieve a navigable road graph for a given geographic area.
 
-        :param area: Geographic area of interest
+        :param None
         :return: GraphData containing nodes and edges
         """
+        #TODO: Add city param in the future
         ...

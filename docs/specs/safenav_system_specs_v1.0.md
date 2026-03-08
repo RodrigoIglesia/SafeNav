@@ -1,3 +1,7 @@
+[ ] TODO: Change design and interfaces for new city change functionality.
+[ ] The system must be multi-city. when city changes in the UI, the system must know it and load a graph for the entire new cities.
+[ ] For each route request, the city will be sent to the system
+[ ] For performance porpouses, the system must know when a city has been loaded before, by searching in a cached memory
 
 # 1. Descripción del Sistema
 El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo proporcionar a los peatones rutas **seguras o confortables** en entornos urbanos.

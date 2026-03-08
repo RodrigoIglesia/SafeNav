@@ -2,19 +2,15 @@
 SafeNav Core - Data Management Service
 -------------------------------------------------------------
 """
-#TODO: This module provides a mock implementation of Data Management. It simulates access to map and graph data without connecting to external services. Replace _mock_graph with real data retrieval logic in production.
-
-from datetime import datetime
-from typing import List
-
-import matplotlib
+# TODO: Data Management must implement a Graph Repository with cache.
+# TODO: In each request, Routing Engine will send the selected city.
+# TODO: Data management must knowif the city has been already loaded, and only load a graph if it has not been loaded before. This can be done with a simple in-memory cache of loaded cities, or with a more sophisticated graph repository that can store and retrieve graphs from disk or a database.
 
 from interfaces.i_road_graph_access import I_RoadGraphAccess
 from domain.dto.map_data import GraphData, Edge
 from domain.dto.common import GeoPoint
 
 import osmnx as ox
-import matplotlib.pyplot as plt
 
 
 class DataManagement(I_RoadGraphAccess):
