@@ -9,8 +9,10 @@ import {
   useMap
 } from "react-leaflet";
 import L from "leaflet";
-import FloatingRoutePanel from "./FloatingRoutePanel";
 import "leaflet/dist/leaflet.css";
+
+import FloatingRoutePanel from "./FloatingRoutePanel";
+import citiesConfig from "../config/cities.json";
 
 // Fix default marker icons (Leaflet + Vite/React issue)
 delete L.Icon.Default.prototype._getIconUrl;
@@ -23,10 +25,9 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png"
 });
 
-const DEFAULT_CENTER = [40.4168, -3.7038];
 const DEFAULT_ZOOM = 13;
 
-// Component to fit map bounds to route
+// Fit route bounds
 function FitBounds({ origin, destination }) {
   const map = useMap();
 
@@ -40,7 +41,7 @@ function FitBounds({ origin, destination }) {
   return null;
 }
 
-// Component that automatically adjusts the map view
+// Fit city bounds
 function FitCityBounds({ bounds }) {
   const map = useMap();
 
@@ -55,6 +56,26 @@ function FitCityBounds({ bounds }) {
 }
 
 export default function MapView() {
+
+  // ===============================
+  // Read default city from config
+  // ===============================
+  const defaultCityKey = citiesConfig.default;
+  const defaultCity = citiesConfig.cities[defaultCityKey];
+
+  const initialBounds = [
+    [defaultCity.bounds.south, defaultCity.bounds.west],
+    [defaultCity.bounds.north, defaultCity.bounds.east]
+  ];
+
+  const initialCenter = [
+    (defaultCity.bounds.south + defaultCity.bounds.north) / 2,
+    (defaultCity.bounds.west + defaultCity.bounds.east) / 2
+  ];
+
+  // ===============================
+  // State
+  // ===============================
   const [tileUrl, setTileUrl] = useState(
     "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
   );
@@ -64,12 +85,17 @@ export default function MapView() {
     destination: null
   });
 
-  const errorTimeoutRef = useRef(null);
-  const successTimeoutRef = useRef(null);
   const [osmReachable, setOsmReachable] = useState(true);
 
-  const [cityBounds, setCityBounds] = useState(null);
+  const [cityBounds, setCityBounds] = useState(initialBounds);
+  const [selectedCity, setSelectedCity] = useState(defaultCityKey);
 
+  const errorTimeoutRef = useRef(null);
+  const successTimeoutRef = useRef(null);
+
+  // ===============================
+  // Tile status handlers
+  // ===============================
   const handleTileLoad = () => {
     if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
     successTimeoutRef.current = setTimeout(() => setOsmReachable(true), 200);
@@ -80,26 +106,35 @@ export default function MapView() {
     errorTimeoutRef.current = setTimeout(() => setOsmReachable(false), 1500);
   };
 
+  // ===============================
+  // Route handler
+  // ===============================
   const handleRouteChange = ({ origin, destination }) => {
-    console.log("Route requested:", origin, destination);
-
-    setRoute({
-      origin,
-      destination
-    });
+    setRoute({ origin, destination });
   };
 
-  const handleCityChange = (cityConfig) => {
-    const b = cityConfig.bounds;
+  // ===============================
+  // City change handler
+  // ===============================
+  const handleCityChange = (cityKey) => {
+    const city = citiesConfig.cities[cityKey];
 
-    setCityBounds([
-      [b.south, b.west],
-      [b.north, b.east]
-    ]);
+    setSelectedCity(cityKey);
+
+    const newBounds = [
+      [city.bounds.south, city.bounds.west],
+      [city.bounds.north, city.bounds.east]
+    ];
+
+    setCityBounds(newBounds);
+
+    // Reset route when city changes
+    setRoute({ origin: null, destination: null });
   };
 
   return (
     <div style={{ position: "relative" }}>
+
       {!osmReachable && (
         <div className="loading-screen">
           Connecting to OpenStreetMap...
@@ -107,7 +142,7 @@ export default function MapView() {
       )}
 
       <MapContainer
-        center={DEFAULT_CENTER}
+        center={initialCenter}
         zoom={DEFAULT_ZOOM}
         style={{ height: "100vh", width: "100%" }}
       >
@@ -124,21 +159,13 @@ export default function MapView() {
 
         <ZoomControl position="topright" />
 
-        {/* Adjust map view */}
         <FitBounds
           origin={route.origin}
           destination={route.destination}
         />
 
-        {/* Origin marker */}
-        {route.origin && (
-          <Marker position={route.origin} />
-        )}
-
-        {/* Destination marker */}
-        {route.destination && (
-          <Marker position={route.destination} />
-        )}
+        {route.origin && <Marker position={route.origin} />}
+        {route.destination && <Marker position={route.destination} />}
 
       </MapContainer>
 
@@ -146,6 +173,9 @@ export default function MapView() {
         onRouteChange={handleRouteChange}
         onMapStyleChange={setTileUrl}
         onCityChange={handleCityChange}
+        activeCityBounds={cityBounds}
+        selectedCity={selectedCity}
+        cities={citiesConfig.cities}
       />
     </div>
   );

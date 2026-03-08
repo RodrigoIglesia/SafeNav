@@ -3,38 +3,41 @@
 import { useState } from "react";
 import "./FloatingRoutePanel.css";
 import { requestRoute } from "../api.js";
-import citiesConfig from "../config/cities.json";
 
 let originTimeout;
 let destinationTimeout;
 
-
-// Geocode address to coordinates
+// ==============================
+// Geocode
+// ==============================
 async function geocode(address) {
   const response = await fetch(
     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`
   );
 
   const results = await response.json();
-
   if (results.length === 0) return null;
 
   return [parseFloat(results[0].lat), parseFloat(results[0].lon)];
 }
 
-// Search places for autocomplete
-async function searchPlaces(query) {
+// ==============================
+// Search with city bounds
+// ==============================
+async function searchPlaces(query, bounds) {
   if (!query || query.length < 3) return [];
 
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          Accept: "application/json"
-        }
-      }
-    );
+    let url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
+
+    if (bounds) {
+      const [[south, west], [north, east]] = bounds;
+      url += `&viewbox=${west},${north},${east},${south}&bounded=1`;
+    }
+
+    const response = await fetch(url, {
+      headers: { Accept: "application/json" }
+    });
 
     if (!response.ok) return [];
 
@@ -46,7 +49,17 @@ async function searchPlaces(query) {
   }
 }
 
-export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, onCityChange }) {
+// ==============================
+// Component
+// ==============================
+export default function FloatingRoutePanel({
+  onRouteChange,
+  onMapStyleChange,
+  onCityChange,
+  activeCityBounds,
+  selectedCity,
+  cities
+}) {
 
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
@@ -55,7 +68,6 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, on
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
 
   const [expanded, setExpanded] = useState(true);
-  const [selectedCity, setSelectedCity] = useState(citiesConfig.default);
 
   const styles = [
     { name: "Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
@@ -64,8 +76,12 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, on
     { name: "Topo", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
   ];
 
+  // ==============================
+  // Submit
+  // ==============================
   const handleSubmit = async () => {
     if (!origin || !destination) return;
+
     try {
       const originCoords = await geocode(origin);
       const destinationCoords = await geocode(destination);
@@ -75,25 +91,14 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, on
         return;
       }
 
-      // Generate request message for API
       const routeRequest = {
-        origin: {
-          lat: originCoords[0],
-          lon: originCoords[1],
-        },
-        destination: {
-          lat: destinationCoords[0],
-          lon: destinationCoords[1],
-        },
+        origin: { lat: originCoords[0], lon: originCoords[1] },
+        destination: { lat: destinationCoords[0], lon: destinationCoords[1] },
         preferences: null
       };
 
-      // Create request
       const routeResponse = await requestRoute(routeRequest);
 
-      console.log("Route response:", routeResponse);
-
-      // opcional: enviar al mapa
       onRouteChange({
         origin: originCoords,
         destination: destinationCoords,
@@ -106,24 +111,28 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, on
     }
   };
 
+  // ==============================
+  // Origin change
+  // ==============================
   const handleOriginChange = (value) => {
     setOrigin(value);
-
     clearTimeout(originTimeout);
 
     originTimeout = setTimeout(async () => {
-      const results = await searchPlaces(value);
+      const results = await searchPlaces(value, activeCityBounds);
       setOriginSuggestions(results);
     }, 300);
   };
 
+  // ==============================
+  // Destination change
+  // ==============================
   const handleDestinationChange = (value) => {
     setDestination(value);
-
     clearTimeout(destinationTimeout);
 
     destinationTimeout = setTimeout(async () => {
-      const results = await searchPlaces(value);
+      const results = await searchPlaces(value, activeCityBounds);
       setDestinationSuggestions(results);
     }, 300);
   };
@@ -133,7 +142,6 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, on
 
       <div className="route-panel-header">
         <span>Route Planner</span>
-
         <button
           className="route-panel-toggle"
           onClick={() => setExpanded(!expanded)}
@@ -144,30 +152,21 @@ export default function FloatingRoutePanel({ onRouteChange, onMapStyleChange, on
 
       {expanded && (
         <div className="route-panel-body">
+
           {/* CITY SELECTOR */}
           <div className="city-selector">
             <select
               value={selectedCity}
-              onChange={(e) => {
-                const cityKey = e.target.value;
-                setSelectedCity(cityKey);
-
-                if (onCityChange) {
-                  onCityChange(
-                    citiesConfig.cities[cityKey]
-                  );
-                }
-              }}
+              onChange={(e) => onCityChange(e.target.value)}
             >
-              {Object.entries(citiesConfig.cities).map(
-                ([key, city]) => (
-                  <option key={key} value={key}>
-                    {city.label}
-                  </option>
-                )
-              )}
+              {Object.entries(cities).map(([key, city]) => (
+                <option key={key} value={key}>
+                  {city.label}
+                </option>
+              ))}
             </select>
           </div>
+
           {/* ORIGIN */}
           <input
             type="text"
