@@ -11,74 +11,67 @@ from domain.dto.map_data import GraphData, Edge
 from domain.dto.common import GeoPoint
 
 import osmnx as ox
+from osmnx._errors import GraphSimplificationError
+
+from pathlib import Path
 
 
 class DataManagement(I_RoadGraphAccess):
 
+    cache_dir = Path("./graph_cache")
+    cache_dir.mkdir(exist_ok=True)
+
     # ==========================================================
     # I_RoadGraphAccess implementation
     # ==========================================================
-    def get_graph_data(self, area) -> GraphData:
+    def get_graph_data(self, city="Madrid") -> GraphData:
         """
         Returns mock graph data for routing.
         """
-        print(f"DM: Retrieving graph data for area {area}") #TODO: Change to logging
+        print(f"DM: Retrieving graph data for city {city}") #TODO: Change to logging
 
-        return self._fetch_road_graph_data(area)
+        return self._fetch_road_graph_data(city)
 
 
-    def _fetch_road_graph_data(self, area) -> GraphData:
-        # Calculate bounding box from area
-        north = max(p.lat for p in area.coordinates)
-        south = min(p.lat for p in area.coordinates)
-        east = max(p.lon for p in area.coordinates)
-        west = min(p.lon for p in area.coordinates)
+    def _fetch_road_graph_data(self, city: str) -> GraphData:
+        """
+        _fetch_graph_data
+        """
+        #TODO: buscar una forma más eficiente de cachear grafos (DB)
+       
+        print(f"DM: Downloading graph for city {city}")
 
-        print(f"DM: Downloading graph for bbox N{north}, S{south}, E{east}, W{west}")
+        path = self._get_graph_file_path(city)
 
-        # Download graph from OSM
-        G = ox.graph_from_bbox(
-            north=north,
-            south=south,
-            east=east,
-            west=west,
-            network_type="walk"  # TODO: Move to config file
-        )
+        if path.exists():
+            # Load from disk (fast)
+            print(f"Loading cached graph for {city}")
+            G = ox.load_graphml(str(path))
+        else:
+            # Download graph once
+            print(f"Downloading graph for {city}")
+            G = ox.graph_from_place(city, network_type="walk")
+            try:
+                G = ox.simplify_graph(G)
+            except GraphSimplificationError:
+                # Graph already simplified, safe to continue
+                pass
+            ox.save_graphml(G, str(path))
+        
+        # Project graph to metric coordinates (meters)
+        G = ox.project_graph(G)
 
         ##########################################################################
         ##TODO: Remove debug code
-        import folium
-        m = ox.plot_graph_folium(G)
-
-        # Añadir popups personalizados
-        for u, v, data in G.edges(data=True):
-            if "length" in data:
-                popup_text = f"""
-                Length: {data.get('length', 0):.2f} m<br>
-                Highway: {data.get('highway', '')}<br>
-                Maxspeed: {data.get('maxspeed', '')}
-                """
-
-                folium.PolyLine(
-                    locations=[
-                        (G.nodes[u]["y"], G.nodes[u]["x"]),
-                        (G.nodes[v]["y"], G.nodes[v]["x"])
-                    ],
-                    popup=popup_text,
-                    color="blue",
-                    weight=2
-                ).add_to(m)
-
-        m.save("graph_interactive.html")
-        print("Saved graph_interactive.html") #TODO: Cange to logging
         ##########################################################################
+        self._generate_graph_html(G)
 
         print(f"DM: Retrieved {len(G.nodes)} nodes and {len(G.edges)} edges")
 
         # Convert to GraphData format
         graph = self._convert_networkx_to_graphdata(G)
 
-        return G
+        return graph
 
     def _convert_networkx_to_graphdata(self, G) -> GraphData:
         """
@@ -112,12 +105,41 @@ class DataManagement(I_RoadGraphAccess):
             edges=edges
         )
 
+    def _get_graph_file_path(self, city: str):
+        safe_city = city.replace(" ", "_").lower()
+        return self.cache_dir / f"{safe_city}.graphml"
 
+    def _generate_graph_html(self, G):
+        import folium
+        m = ox.plot_graph_folium(G)
+
+        # Añadir popups personalizados
+        for u, v, data in G.edges(data=True):
+            if "length" in data:
+                popup_text = f"""
+                Length: {data.get('length', 0):.2f} m<br>
+                Highway: {data.get('highway', '')}<br>
+                Maxspeed: {data.get('maxspeed', '')}
+                """
+
+                folium.PolyLine(
+                    locations=[
+                        (G.nodes[u]["y"], G.nodes[u]["x"]),
+                        (G.nodes[v]["y"], G.nodes[v]["x"])
+                    ],
+                    popup=popup_text,
+                    color="blue",
+                    weight=2
+                ).add_to(m)
+
+        m.save("graph_interactive.html")
+        print("DM: DEBUG: Saved graph_interactive.html") #TODO: Cange to logging
+    
+    #TODO: Remove
     def _build_mock_graph(self) -> GraphData:
         """
         Creates a small mock graph with two connected nodes.
         """
-        #TODO: Remove
 
         node_a = GeoPoint(lat=40.4168, lon=-3.7038)
         node_b = GeoPoint(lat=40.4379, lon=-3.6793)

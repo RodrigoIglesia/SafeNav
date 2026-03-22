@@ -2,8 +2,6 @@
 
 from typing import Protocol
 from domain.dto.map_data import GraphData
-from domain.dto.common import Polygon
-
 
 class I_RoadGraphAccess(Protocol):
     """
@@ -12,12 +10,11 @@ class I_RoadGraphAccess(Protocol):
     Implemented by Data Management.
     """
 
-    def get_graph_data() -> GraphData:
+    def get_graph_data(self, city) -> GraphData:
         """
         Retrieve a navigable road graph for a given geographic area.
 
-        :param None
+        :param: city from which the graph will be retrieved - By default Madrid
         :return: GraphData containing nodes and edges
         """
-        #TODO: Add city param in the future
         ...

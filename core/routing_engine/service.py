@@ -6,8 +6,6 @@ Implements the IRoutingService interface.
 This version returns mock data for development/testing.
 """
 
-# TODO: Routing Engine must send city instead of area to data management.
-
 from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
 from domain.dto.common import GeoPoint, Polygon
 from datetime import datetime, timezone
@@ -34,7 +32,7 @@ class RoutingEngine(IRoutingService):
 
         # Calculate Area to request the Graph to calculate routes
         # area = self._build_area_from_points(request.origin, request.destination) # TODO: Remove
-        graph = self.road_graph_access.get_graph_data() # TODO: Change interfaces to pass city in the future
+        graph = self.road_graph_access.get_graph_data()
         print(f"RE: Retrieved graph with {len(graph.nodes)} nodes and {len(graph.edges)} edges")
 
         # Estimate route
@@ -77,20 +75,21 @@ class RoutingEngine(IRoutingService):
             scores=scores
         )
 
-    def _build_area_from_points(self,origin, destination) -> Polygon:
-        min_lat = min(origin.lat, destination.lat)
-        max_lat = max(origin.lat, destination.lat)
-        min_lon = min(origin.lon, destination.lon)
-        max_lon = max(origin.lon, destination.lon)
+    # TODO: Remove
+    # def _build_area_from_points(self,origin, destination) -> Polygon:
+    #     min_lat = min(origin.lat, destination.lat)
+    #     max_lat = max(origin.lat, destination.lat)
+    #     min_lon = min(origin.lon, destination.lon)
+    #     max_lon = max(origin.lon, destination.lon)
 
-        return Polygon(
-            coordinates=[
-                GeoPoint(lat=min_lat, lon=min_lon),
-                GeoPoint(lat=min_lat, lon=max_lon),
-                GeoPoint(lat=max_lat, lon=max_lon),
-                GeoPoint(lat=max_lat, lon=min_lon),
-            ]
-        )
+    #     return Polygon(
+    #         coordinates=[
+    #             GeoPoint(lat=min_lat, lon=min_lon),
+    #             GeoPoint(lat=min_lat, lon=max_lon),
+    #             GeoPoint(lat=max_lat, lon=max_lon),
+    #             GeoPoint(lat=max_lat, lon=min_lon),
+    #         ]
+    #     )
 
     def _dijkstra(self, graph, start, goal):
         # TODO: Refine algorithm and move code to models
