@@ -24,23 +24,21 @@ class DataManagement(I_RoadGraphAccess):
     # ==========================================================
     # I_RoadGraphAccess implementation
     # ==========================================================
-    def get_graph_data(self, city="Madrid") -> GraphData:
+    def get_graph_data(self, area, city="Madrid") -> GraphData:
         """
         Returns mock graph data for routing.
         """
         print(f"DM: Retrieving graph data for city {city}") #TODO: Change to logging
 
-        return self._fetch_road_graph_data(city)
+        return self._fetch_road_graph_data(area, city)
 
 
-    def _fetch_road_graph_data(self, city: str) -> GraphData:
+    def _fetch_road_graph_data(self, area, city: str) -> GraphData:
         """
         _fetch_graph_data
         """
         #TODO: buscar una forma más eficiente de cachear grafos (DB)
        
-        print(f"DM: Downloading graph for city {city}")
-
         path = self._get_graph_file_path(city)
 
         if path.exists():
@@ -49,22 +47,23 @@ class DataManagement(I_RoadGraphAccess):
             G = ox.load_graphml(str(path))
         else:
             # Download graph once
-            print(f"Downloading graph for {city}")
-            G = ox.graph_from_place(city, network_type="walk")
-            try:
-                G = ox.simplify_graph(G)
-            except GraphSimplificationError:
-                # Graph already simplified, safe to continue
-                pass
+            print(f"DM: Downloading graph for city {city}")
+            center_point = (area.center.lat, area.center.lon)
+            G = ox.graph_from_point(
+                center_point, 
+                dist=area.radius_m,  # distance in meters
+                network_type="walk"
+            )
+
             ox.save_graphml(G, str(path))
         
-        # Project graph to metric coordinates (meters)
-        G = ox.project_graph(G)
+        # # Project graph to metric coordinates (meters)
+        # G = ox.project_graph(G)
 
         ##########################################################################
         ##TODO: Remove debug code
         ##########################################################################
-        self._generate_graph_html(G)
+        # self._generate_graph_html(G)
 
         print(f"DM: Retrieved {len(G.nodes)} nodes and {len(G.edges)} edges")
 
@@ -86,6 +85,7 @@ class DataManagement(I_RoadGraphAccess):
 
         for node_id, data in G.nodes(data=True):
             point = GeoPoint(
+                id=str(node_id),
                 lat=data["y"],
                 lon=data["x"]
             )
@@ -134,25 +134,3 @@ class DataManagement(I_RoadGraphAccess):
 
         m.save("graph_interactive.html")
         print("DM: DEBUG: Saved graph_interactive.html") #TODO: Cange to logging
-    
-    #TODO: Remove
-    def _build_mock_graph(self) -> GraphData:
-        """
-        Creates a small mock graph with two connected nodes.
-        """
-
-        node_a = GeoPoint(lat=40.4168, lon=-3.7038)
-        node_b = GeoPoint(lat=40.4379, lon=-3.6793)
-
-        edge = Edge(
-            from_node=node_a,
-            to_node=node_b,
-            weight=1.0,
-        )
-
-        graph = GraphData(
-            nodes=[node_a, node_b],
-            edges=[edge],
-        )
-
-        return graph

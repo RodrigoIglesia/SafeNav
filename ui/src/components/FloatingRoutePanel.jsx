@@ -3,6 +3,7 @@
 import { useState } from "react";
 import "./FloatingRoutePanel.css";
 import { requestRoute } from "../api.js";
+// import { toGeoPoint } from "../utils/geo";
 
 let originTimeout;
 let destinationTimeout;
@@ -92,12 +93,20 @@ export default function FloatingRoutePanel({
       }
 
       const routeRequest = {
-        origin: { lat: originCoords[0], lon: originCoords[1] },
-        destination: { lat: destinationCoords[0], lon: destinationCoords[1] },
+        origin: {
+          lat: originCoords[0],
+          lon: originCoords[1]
+        },
+        destination: {
+          lat: destinationCoords[0],
+          lon: destinationCoords[1]
+        },
         preferences: null
       };
 
       const routeResponse = await requestRoute(routeRequest);
+      console.log("Full response:", routeResponse);
+      console.log("Path length:", routeResponse?.path?.length);
 
       onRouteChange({
         origin: originCoords,

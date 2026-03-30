@@ -11,15 +11,15 @@ Defines core data transfer objects related to routing operations in SafeNav:
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
-from .common import GeoPoint, Polyline, RoutePreferences, ResponseMetadata
+from .common import Point, Path, RoutePreferences, ResponseMetadata
 
 
 # === Route Request ===
 
 class RouteRequest(BaseModel):
     """Represents a route request made by the user through the API."""
-    origin: GeoPoint = Field(..., description="Starting point of the route")
-    destination: GeoPoint = Field(..., description="Ending point of the route")
+    origin: Point = Field(..., description="Starting point of the route")
+    destination: Point = Field(..., description="Ending point of the route")
     preferences: Optional[RoutePreferences] = Field(
         None, description="User-defined routing preferences (comfort, time, sun exposure)"
     )
@@ -30,7 +30,7 @@ class RouteRequest(BaseModel):
 class RouteCandidate(BaseModel):
     """Represents a possible route option computed by the Routing Engine."""
     id: str = Field(..., description="Unique identifier for the candidate route")
-    geometry: Polyline = Field(..., description="Ordered set of coordinates forming the route path")
+    geometry: Path = Field(..., description="Ordered set of coordinates forming the route path")
     eta: float = Field(..., gt=0, description="Estimated time of arrival (in seconds)")
     distance: float = Field(..., gt=0, description="Route distance (in meters)")
 

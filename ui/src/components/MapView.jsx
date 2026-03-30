@@ -1,18 +1,13 @@
 // src/components/MapView.jsx
 
 import { useState, useRef, useEffect } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  ZoomControl,
-  Marker,
-  useMap
-} from "react-leaflet";
+import { MapContainer, TileLayer, ZoomControl, Marker, useMap, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import FloatingRoutePanel from "./FloatingRoutePanel";
 import citiesConfig from "../config/cities.json";
+import { toLatLng } from "../utils/geo";
 
 // Fix default marker icons (Leaflet + Vite/React issue)
 delete L.Icon.Default.prototype._getIconUrl;
@@ -26,6 +21,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const DEFAULT_ZOOM = 13;
+
 
 // Fit route bounds
 function FitBounds({ origin, destination }) {
@@ -110,7 +106,10 @@ export default function MapView() {
   // Route handler
   // ===============================
   const handleRouteChange = ({ origin, destination }) => {
-    setRoute({ origin, destination });
+    setRoute({ 
+      origin: origin,
+      destination: destination
+    });
   };
 
   // ===============================
@@ -144,6 +143,7 @@ export default function MapView() {
       <MapContainer
         center={initialCenter}
         zoom={DEFAULT_ZOOM}
+        zoomControl={false}
         style={{ height: "100vh", width: "100%" }}
       >
         <TileLayer
@@ -164,9 +164,20 @@ export default function MapView() {
           destination={route.destination}
         />
 
-        {route.origin && <Marker position={route.origin} />}
-        {route.destination && <Marker position={route.destination} />}
+        {/* Markers using toLatLng */}
+        {route.origin && <Marker position={toLatLng(route.origin)} />}
+        {route.destination && <Marker position={toLatLng(route.destination)} />}
 
+        {/* Path using toLatLng */}
+        {route.path && (
+          <Polyline
+            positions={route.path
+              .map(toLatLng)
+              .filter(Boolean) // remove nulls if any invalid point
+            }
+            pathOptions={{ color: "blue", weight: 5 }}
+          />
+        )}
       </MapContainer>
 
       <FloatingRoutePanel
