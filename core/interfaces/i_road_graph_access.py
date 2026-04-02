@@ -16,7 +16,7 @@ class I_RoadGraphAccess(Protocol):
         Retrieve a navigable road graph for a given geographic area.
 
         :param:
-                area based on the origin and destination to filter the graph
+            area based on the origin and destination to filter the graph
             city from which the graph will be retrieved - By default Madrid
         :return: GraphData containing nodes and edges
         """

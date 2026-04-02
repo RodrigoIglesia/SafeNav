@@ -6,16 +6,20 @@ Implements the IRoutingService interface.
 This version returns mock data for development/testing.
 """
 
+#TODO: Refactor
+#TODO: Improve routing algorithmm, takes too long with large graphs
+
 from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
 from domain.dto.common import Point, GeoPoint, Area
 from domain.dto.map_data import GraphData
 from interfaces.i_routing_service import IRoutingService
 from interfaces.i_road_graph_access import I_RoadGraphAccess
+
+from common.utils import haversine_distance_m
 from typing import List
 from uuid import uuid4
 
 import heapq
-from math import radians, cos, sin, asin, sqrt
 
 class RoutingEngine(IRoutingService):
     """
@@ -42,7 +46,10 @@ class RoutingEngine(IRoutingService):
         # Estimate route
         # Search the origin and destination points in the graph
         graph_origin = self._search_nearest_point(graph.nodes, request.origin)
+        print(f"RE: Route origin set to {graph_origin}.")
+        
         graph_destination = self._search_nearest_point(graph.nodes, request.destination)
+        print(f"RE: Route destination set to {graph_destination}.")
         print(f"RE: Calculating route from {(graph_origin.lat, graph_origin.lon)} to {(graph_destination.lat, graph_destination.lon)} coordinates.")
 
         # TODO: Change to models module methods
@@ -92,30 +99,14 @@ class RoutingEngine(IRoutingService):
         center = Point(lat=center_lat, lon=center_lon)
 
         # Compute radius as half the distance between points
-        radius_m = self._haversine_distance_m(origin, destination) / 2
+        radius_m = haversine_distance_m(origin, destination) / 2
 
         return Area(center=center, radius_m=radius_m)
     
-    def _haversine_distance_m(self, p1, p2) -> float:
-        """
-        Calculate the great-circle distance in meters between two points.
-        The function must accept both Point and GeoPoint
-        """
-        lat1, lon1, lat2, lon2 = map(
-        radians,
-        [p1.lat, p1.lon, p2.lat, p2.lon]
-        )
-        dlat = lat2 - lat1
-        dlon = lon2 - lon1
-
-        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
-        c = 2 * asin(sqrt(a))
-        R = 6371000 # Radius of the Earth in meters
-        return R * c
 
     def _search_nearest_point(self, nodes: List[GeoPoint], point: Point) -> GeoPoint:
         """Return the GeoPoint in nodes closest to the input Point."""
-        nearest = min(nodes, key=lambda node: self._haversine_distance_m(point, node))
+        nearest = min(nodes, key=lambda node: haversine_distance_m(point, node))
         
         return nearest
     

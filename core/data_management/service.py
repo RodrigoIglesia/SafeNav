@@ -2,18 +2,21 @@
 SafeNav Core - Data Management Service
 -------------------------------------------------------------
 """
-# TODO: Data Management must implement a Graph Repository with cache.
-# TODO: In each request, Routing Engine will send the selected city.
-# TODO: Data management must knowif the city has been already loaded, and only load a graph if it has not been loaded before. This can be done with a simple in-memory cache of loaded cities, or with a more sophisticated graph repository that can store and retrieve graphs from disk or a database.
+# TODO: Improve cache management. Check if area is contained in a cached one.
+# TODO: Think better solution for caching areas and using them >> IOU of areas?? >> Check SOA
 
 from interfaces.i_road_graph_access import I_RoadGraphAccess
 from domain.dto.map_data import GraphData, Edge
-from domain.dto.common import GeoPoint
+from domain.dto.common import Point, GeoPoint, Area
+
+from common.utils import haversine_distance_m
 
 import osmnx as ox
 from osmnx._errors import GraphSimplificationError
 
 from pathlib import Path
+import hashlib
+import re
 
 
 class DataManagement(I_RoadGraphAccess):
@@ -24,7 +27,7 @@ class DataManagement(I_RoadGraphAccess):
     # ==========================================================
     # I_RoadGraphAccess implementation
     # ==========================================================
-    def get_graph_data(self, area, city="Madrid") -> GraphData:
+    def get_graph_data(self, area: Area, city="Madrid") -> GraphData:
         """
         Returns mock graph data for routing.
         """
@@ -33,29 +36,40 @@ class DataManagement(I_RoadGraphAccess):
         return self._fetch_road_graph_data(area, city)
 
 
-    def _fetch_road_graph_data(self, area, city: str) -> GraphData:
+    def _fetch_road_graph_data(self, area: Area, city: str) -> GraphData:
         """
         _fetch_graph_data
         """
         #TODO: buscar una forma más eficiente de cachear grafos (DB)
        
-        path = self._get_graph_file_path(city)
+        # Try to reuse an existing graph
+        cached = self._find_best_cached_graph(area, city)
 
-        if path.exists():
-            # Load from disk (fast)
-            print(f"Loading cached graph for {city}")
-            G = ox.load_graphml(str(path))
+        if cached:
+            print(f"Loading REUSED cached graph for {city}: {cached['file'].name}")
+            G = ox.load_graphml(str(cached["file"]))
+
         else:
-            # Download graph once
-            print(f"DM: Downloading graph for city {city}")
-            center_point = (area.center.lat, area.center.lon)
-            G = ox.graph_from_point(
-                center_point, 
-                dist=area.radius_m,  # distance in meters
-                network_type="walk"
-            )
+            # fallback to exact match (optional but keeps your logic)
+            path = self._get_graph_cache_file_path(area, city)
 
-            ox.save_graphml(G, str(path))
+            if path.exists():
+                print(f"Loading cached graph for {city}")
+                G = ox.load_graphml(str(path))
+
+            else:
+                # Download new graph
+                print(f"DM: Downloading graph for city {city}")
+
+                center_point = (area.center.lat, area.center.lon)
+
+                G = ox.graph_from_point(
+                    center_point,
+                    dist=area.radius_m,
+                    network_type="walk"
+                )
+
+                ox.save_graphml(G, str(path))
         
         # # Project graph to metric coordinates (meters)
         # G = ox.project_graph(G)
@@ -72,6 +86,51 @@ class DataManagement(I_RoadGraphAccess):
 
         return graph
 
+    def _find_best_cached_graph(self, area: Area, city: str):
+        cached_graphs = self._scan_cached_graphs(city)
+
+        candidates = []
+
+        for entry in cached_graphs:
+            cached_center = Point(
+                lat=entry["center"]["lat"],
+                lon=entry["center"]["lon"]
+            )
+            dist = haversine_distance_m(area.center, cached_center)
+
+            if dist + area.radius_m <= entry["radius"] * 1.01:
+                candidates.append(entry)
+
+        if not candidates:
+            return None
+
+        # pick smallest valid graph
+        return min(candidates, key=lambda x: x["radius"])
+
+    def _scan_cached_graphs(self, city: str):
+        safe_city = city.replace(" ", "_").lower()
+        cached = []
+
+        pattern = re.compile(
+            rf"{safe_city}_(?P<lat>-?\d+\.\d+)_(?P<lon>-?\d+\.\d+)_(?P<radius>\d+)m_.*\.graphml"
+        )
+
+        for file in self.cache_dir.glob(f"{safe_city}_*.graphml"):
+            match = pattern.match(file.name)
+            if not match:
+                continue
+
+            cached.append({
+                "file": file,
+                "center": {
+                    "lat": float(match.group("lat")),
+                    "lon": float(match.group("lon"))
+                },
+                "radius": float(match.group("radius"))
+            })
+
+        return cached
+    
     def _convert_networkx_to_graphdata(self, G) -> GraphData:
         """
         Convert NetworkX graph (OSMnx) to SafeNav GraphData.
@@ -105,9 +164,24 @@ class DataManagement(I_RoadGraphAccess):
             edges=edges
         )
 
-    def _get_graph_file_path(self, city: str):
+    def _area_to_hash(self, area: Area) -> str:
+        # Convert area to a stable, sorted representation for saving cache files
+        lat = round(area.center.lat, 6)
+        lon = round(area.center.lon, 6)
+        radius = round(area.radius_m, 1)  # 0.1m precision is more than enough
+
+        area_str = f"{lat}_{lon}_{radius}"
+
+        return hashlib.md5(area_str.encode()).hexdigest()
+    
+    def _get_graph_cache_file_path(self, area: Area, city: str):
         safe_city = city.replace(" ", "_").lower()
-        return self.cache_dir / f"{safe_city}.graphml"
+        area_hash = self._area_to_hash(area)
+        lat = round(area.center.lat, 4)
+        lon = round(area.center.lon, 4)
+        radius = int(area.radius_m)
+
+        return self.cache_dir / f"{safe_city}_{lat}_{lon}_{radius}m_{area_hash}.graphml"
 
     def _generate_graph_html(self, G):
         import folium

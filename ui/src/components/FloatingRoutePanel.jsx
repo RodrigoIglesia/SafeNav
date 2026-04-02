@@ -26,6 +26,9 @@ async function geocode(address) {
 // Search with city bounds
 // ==============================
 async function searchPlaces(query, bounds) {
+  //
+  // Nominatim librarie to search places and show suggestions
+  //
   if (!query || query.length < 3) return [];
 
   try {
@@ -62,6 +65,9 @@ export default function FloatingRoutePanel({
   cities
 }) {
 
+  const [originCoords, setOriginCoords] = useState(null);
+  const [destinationCoords, setDestinationCoords] = useState(null);
+
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
 
@@ -84,33 +90,36 @@ export default function FloatingRoutePanel({
     if (!origin || !destination) return;
 
     try {
-      const originCoords = await geocode(origin);
-      const destinationCoords = await geocode(destination);
+      // Obtain Geocode of the selected suggestion
+      //TODO: Move to backend
+      const finalOrigin =
+        originCoords || await geocode(origin);
 
-      if (!originCoords || !destinationCoords) {
+      const finalDestination =
+        destinationCoords || await geocode(destination);
+
+      if (!finalOrigin || !finalDestination) {
         alert("Could not find one of the locations.");
         return;
       }
 
       const routeRequest = {
         origin: {
-          lat: originCoords[0],
-          lon: originCoords[1]
+          lat: finalOrigin[0],
+          lon: finalOrigin[1]
         },
         destination: {
-          lat: destinationCoords[0],
-          lon: destinationCoords[1]
+          lat: finalDestination[0],
+          lon: finalDestination[1]
         },
         preferences: null
       };
 
       const routeResponse = await requestRoute(routeRequest);
-      console.log("Full response:", routeResponse);
-      console.log("Path length:", routeResponse?.path?.length);
-
+      console.log("Route response in panel:", routeResponse);
       onRouteChange({
-        origin: originCoords,
-        destination: destinationCoords,
+        origin: finalOrigin,
+        destination: finalDestination,
         route: routeResponse
       });
 
@@ -125,6 +134,7 @@ export default function FloatingRoutePanel({
   // ==============================
   const handleOriginChange = (value) => {
     setOrigin(value);
+    setOriginCoords(null);
     clearTimeout(originTimeout);
 
     originTimeout = setTimeout(async () => {
@@ -138,6 +148,7 @@ export default function FloatingRoutePanel({
   // ==============================
   const handleDestinationChange = (value) => {
     setDestination(value);
+    setDestinationCoords(null);
     clearTimeout(destinationTimeout);
 
     destinationTimeout = setTimeout(async () => {
@@ -192,6 +203,7 @@ export default function FloatingRoutePanel({
                   className="suggestion-item"
                   onClick={() => {
                     setOrigin(place.display_name);
+                    setOriginCoords([parseFloat(place.lat), parseFloat(place.lon)]);
                     setOriginSuggestions([]);
                   }}
                 >
@@ -217,6 +229,7 @@ export default function FloatingRoutePanel({
                   className="suggestion-item"
                   onClick={() => {
                     setDestination(place.display_name);
+                    setDestinationCoords([parseFloat(place.lat), parseFloat(place.lon)]);
                     setDestinationSuggestions([]);
                   }}
                 >

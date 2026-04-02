@@ -1,5 +1,7 @@
 // src/components/MapView.jsx
 
+// TODO: Add waiting popup for graph download an route estimation
+
 import { useState, useRef, useEffect } from "react";
 import { MapContainer, TileLayer, ZoomControl, Marker, useMap, Polyline } from "react-leaflet";
 import L from "leaflet";
@@ -8,6 +10,9 @@ import "leaflet/dist/leaflet.css";
 import FloatingRoutePanel from "./FloatingRoutePanel";
 import citiesConfig from "../config/cities.json";
 import { toLatLng } from "../utils/geo";
+
+
+const DEFAULT_ZOOM = 13;
 
 // Fix default marker icons (Leaflet + Vite/React issue)
 delete L.Icon.Default.prototype._getIconUrl;
@@ -19,8 +24,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl:
     "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png"
 });
-
-const DEFAULT_ZOOM = 13;
 
 
 // Fit route bounds
@@ -51,6 +54,24 @@ function FitCityBounds({ bounds }) {
   return null;
 }
 
+export function mapRoutesToPolylines(routeResponse) {
+  if (!routeResponse?.routes?.items) return [];
+
+  return routeResponse.routes.items.map((route) => {
+    const latlngs = route.geometry.coordinates.map((point) => [
+      point.lat,
+      point.lon // Leaflet uses lng but accepts this as second value
+    ]);
+
+    return {
+      id: route.id,
+      latlngs,
+      eta: route.eta,
+      distance: route.distance
+    };
+  });
+}
+
 export default function MapView() {
 
   // ===============================
@@ -78,7 +99,8 @@ export default function MapView() {
 
   const [route, setRoute] = useState({
     origin: null,
-    destination: null
+    destination: null,
+    data: null // Store backend response
   });
 
   const [osmReachable, setOsmReachable] = useState(true);
@@ -105,10 +127,12 @@ export default function MapView() {
   // ===============================
   // Route handler
   // ===============================
-  const handleRouteChange = ({ origin, destination }) => {
+  const handleRouteChange = ({ origin, destination, route }) => {
+    console.log("Route received in MapView:", { origin, destination, route });
     setRoute({ 
       origin: origin,
-      destination: destination
+      destination: destination,
+      data: route
     });
   };
 
@@ -130,6 +154,9 @@ export default function MapView() {
     // Reset route when city changes
     setRoute({ origin: null, destination: null });
   };
+
+  // Generate polylines from the response route
+  const polylines = mapRoutesToPolylines(route.data);
 
   return (
     <div style={{ position: "relative" }}>
@@ -164,30 +191,33 @@ export default function MapView() {
           destination={route.destination}
         />
 
+        <FloatingRoutePanel
+          onRouteChange={handleRouteChange}
+          onMapStyleChange={setTileUrl}
+          onCityChange={handleCityChange}
+          activeCityBounds={cityBounds}
+          selectedCity={selectedCity}
+          cities={citiesConfig.cities}
+        />
+
         {/* Markers using toLatLng */}
         {route.origin && <Marker position={toLatLng(route.origin)} />}
         {route.destination && <Marker position={toLatLng(route.destination)} />}
 
-        {/* Path using toLatLng */}
-        {route.path && (
+        {/* Plot Route Candidates Paths */}
+        {polylines.map((r, index) => (
           <Polyline
-            positions={route.path
-              .map(toLatLng)
-              .filter(Boolean) // remove nulls if any invalid point
-            }
-            pathOptions={{ color: "blue", weight: 5 }}
+            key={r.id}
+            positions={r.latlngs}
+            pathOptions={{
+              color: index === 0 ? "blue" : "gray",
+              weight: index === 0 ? 5 : 3,
+              opacity: index === 0 ? 0.9 : 0.6
+            }}
           />
-        )}
+        ))}
       </MapContainer>
 
-      <FloatingRoutePanel
-        onRouteChange={handleRouteChange}
-        onMapStyleChange={setTileUrl}
-        onCityChange={handleCityChange}
-        activeCityBounds={cityBounds}
-        selectedCity={selectedCity}
-        cities={citiesConfig.cities}
-      />
     </div>
   );
 }
