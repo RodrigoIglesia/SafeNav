@@ -1,25 +1,21 @@
 # core/routing_engine/service.py
 """
-Routing Engine - Mock Implementation
+Routing Engine
 ------------------------------------
 Implements the IRoutingService interface.
-This version returns mock data for development/testing.
 """
-
-#TODO: Refactor
-#TODO: Improve routing algorithmm, takes too long with large graphs
 
 from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
 from domain.dto.common import Point, GeoPoint, Area
-from domain.dto.map_data import GraphData
 from interfaces.i_routing_service import IRoutingService
 from interfaces.i_road_graph_access import I_RoadGraphAccess
+
+from routing_engine.modules.router import Router
 
 from common.utils import haversine_distance_m
 from typing import List
 from uuid import uuid4
 
-import heapq
 
 class RoutingEngine(IRoutingService):
     """
@@ -52,8 +48,12 @@ class RoutingEngine(IRoutingService):
         print(f"RE: Route destination set to {graph_destination}.")
         print(f"RE: Calculating route from {(graph_origin.lat, graph_origin.lon)} to {(graph_destination.lat, graph_destination.lon)} coordinates.")
 
-        # TODO: Change to models module methods
-        path = self._dijkstra(graph, graph_origin, graph_destination)
+        # Load Router class
+        router = Router(graph, graph_origin, graph_destination)
+
+        # Apply Dijkstra path planner
+        # TODO: Apply more planner algorithms (paralel?)
+        path = router._dijkstra()
         print(f"RE: path candidate obtained: {len(path)} points.")
 
         candidate = RouteCandidate(
@@ -109,46 +109,3 @@ class RoutingEngine(IRoutingService):
         nearest = min(nodes, key=lambda node: haversine_distance_m(point, node))
         
         return nearest
-    
-    def _dijkstra(self, graph: GraphData, start: GeoPoint, goal: GeoPoint) -> List[GeoPoint]:
-        """
-        Routing Model: Dijkstra
-        Applies Dijkstra algorithm to a graph, using the start and end GeoPoint in the graph.
-        """
-        # Map node.id → GeoPoint for easy lookup
-        node_map = {node.id: node for node in graph.nodes}
-
-        # Initialize distances and previous nodes using IDs
-        distances = {node.id: float("inf") for node in graph.nodes}
-        previous = {node.id: None for node in graph.nodes}
-
-        distances[start.id] = 0
-        pq = [(0, start.id)]  # priority queue of (distance, node_id)
-
-        while pq:
-            current_dist, current_id = heapq.heappop(pq)
-            current_node = node_map[current_id]
-
-            if current_id == goal.id:
-                break
-
-            # Iterate only over edges starting from current node
-            for edge in graph.edges:
-                if edge.from_node.id == current_id:
-                    neighbor_id = edge.to_node.id
-                    alt_distance = current_dist + edge.weight
-
-                    if alt_distance < distances[neighbor_id]:
-                        distances[neighbor_id] = alt_distance
-                        previous[neighbor_id] = current_id
-                        heapq.heappush(pq, (alt_distance, neighbor_id))
-
-        # Reconstruct path as list of GeoPoint
-        path_ids = []
-        node_id = goal.id
-        while node_id is not None:
-            path_ids.insert(0, node_id)
-            node_id = previous[node_id]
-
-        path = [node_map[node_id] for node_id in path_ids]
-        return path

@@ -1,9 +1,10 @@
 // src/components/FloatingRoutePanel.jsx
 
+// TODO: When interacting with floating route pannel, MapView shall not be affected
+
 import { useState } from "react";
 import "./FloatingRoutePanel.css";
 import { requestRoute } from "../api.js";
-// import { toGeoPoint } from "../utils/geo";
 
 let originTimeout;
 let destinationTimeout;

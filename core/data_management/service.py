@@ -4,6 +4,9 @@ SafeNav Core - Data Management Service
 """
 # TODO: Improve cache management. Check if area is contained in a cached one.
 # TODO: Think better solution for caching areas and using them >> IOU of areas?? >> Check SOA
+# TODO: Search a better and more efficent way of caching graphs (DB)
+# TODO: Interfaces shall be updated to adapted the access to cached graphs
+
 
 from interfaces.i_road_graph_access import I_RoadGraphAccess
 from domain.dto.map_data import GraphData, Edge
@@ -33,20 +36,21 @@ class DataManagement(I_RoadGraphAccess):
         """
         print(f"DM: Retrieving graph data for city {city}") #TODO: Change to logging
 
-        return self._fetch_road_graph_data(area, city)
+        eps = 1e-6 # TODO: Add to configuration
+
+        return self._fetch_road_graph_data(area, city, eps)
 
 
-    def _fetch_road_graph_data(self, area: Area, city: str) -> GraphData:
+    def _fetch_road_graph_data(self, area: Area, city: str, eps: float) -> GraphData:
         """
         _fetch_graph_data
         """
-        #TODO: buscar una forma más eficiente de cachear grafos (DB)
        
-        # Try to reuse an existing graph
-        cached = self._find_best_cached_graph(area, city)
+        # Check if area has been cached before > Try to reuse an existing graph
+        cached = self._find_best_cached_graph(area, city, eps)
 
         if cached:
-            print(f"Loading REUSED cached graph for {city}: {cached['file'].name}")
+            print(f"DM: Loading REUSED cached graph for {city}: {cached['file'].name}")
             G = ox.load_graphml(str(cached["file"]))
 
         else:
@@ -54,12 +58,12 @@ class DataManagement(I_RoadGraphAccess):
             path = self._get_graph_cache_file_path(area, city)
 
             if path.exists():
-                print(f"Loading cached graph for {city}")
+                print(f"DM: Loading cached graph for {city}")
                 G = ox.load_graphml(str(path))
 
             else:
                 # Download new graph
-                print(f"DM: Downloading graph for city {city}")
+                print(f"DM: Downloading new graph for city {city}")
 
                 center_point = (area.center.lat, area.center.lon)
 
@@ -86,26 +90,42 @@ class DataManagement(I_RoadGraphAccess):
 
         return graph
 
-    def _find_best_cached_graph(self, area: Area, city: str):
+    def _find_best_cached_graph(self, area: Area, city: str, eps: float):
         cached_graphs = self._scan_cached_graphs(city)
 
-        candidates = []
+        fully_contained = []
 
         for entry in cached_graphs:
             cached_center = Point(
                 lat=entry["center"]["lat"],
                 lon=entry["center"]["lon"]
             )
+
             dist = haversine_distance_m(area.center, cached_center)
 
-            if dist + area.radius_m <= entry["radius"] * 1.01:
-                candidates.append(entry)
+            cached_radius = entry["radius"]
+            requested_radius = area.radius_m
 
-        if not candidates:
+            # Case 1: FULL containment
+            if dist + requested_radius <= cached_radius + eps:
+                print(f"DM: graph contained in chached")
+                fully_contained.append(entry)
+
+            # Case 2: PARTIAL overlap (optional explicit detection)
+            elif dist < (cached_radius + requested_radius):
+                # Overlapping → DO NOT reuse
+                print(f"DM: graph overlapping chached")
+                continue
+
+            # Case 3: No overlap → ignore
+            else:
+                print(f"DM: graph not overlapping chached")
+                continue
+
+        if not fully_contained:
             return None
 
-        # pick smallest valid graph
-        return min(candidates, key=lambda x: x["radius"])
+        return min(fully_contained, key=lambda x: x["radius"])
 
     def _scan_cached_graphs(self, city: str):
         safe_city = city.replace(" ", "_").lower()
