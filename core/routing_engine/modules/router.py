@@ -1,4 +1,3 @@
-
 # core/routing_engine/modules/router.py
 """
 Router Class
@@ -63,3 +62,59 @@ class Router:
 
         path = [node_map[node_id] for node_id in path_ids]
         return path
+    
+    def _astar(self) -> List[GeoPoint]:
+        """
+        Routing Model: A*
+        Faster than Dijkstra using spatial heuristic
+        """
+        node_map = {node.id: node for node in self.graph.nodes}
+
+        # g(n): cost from start to node
+        g_score = {node.id: float("inf") for node in self.graph.nodes}
+        g_score[self.start.id] = 0
+
+        # f(n) = g(n) + h(n)
+        f_score = {node.id: float("inf") for node in self.graph.nodes}
+        f_score[self.start.id] = self._heuristic(self.start, self.goal)
+
+        previous = {node.id: None for node in self.graph.nodes}
+
+        pq = [(f_score[self.start.id], self.start.id)]
+
+        while pq:
+            _, current_id = heapq.heappop(pq)
+            current_node = node_map[current_id]
+
+            if current_id == self.goal.id:
+                break
+
+            for edge in self.graph.edges:
+                if edge.from_node.id == current_id:
+                    neighbor_id = edge.to_node.id
+                    neighbor_node = node_map[neighbor_id]
+
+                    tentative_g = g_score[current_id] + edge.weight
+
+                    if tentative_g < g_score[neighbor_id]:
+                        previous[neighbor_id] = current_id
+                        g_score[neighbor_id] = tentative_g
+
+                        f_score[neighbor_id] = tentative_g + self._heuristic(
+                            neighbor_node, self.goal
+                        )
+
+                        heapq.heappush(pq, (f_score[neighbor_id], neighbor_id))
+
+        # Reconstruct path
+        path_ids = []
+        node_id = self.goal.id
+
+        if previous[node_id] is None and node_id != self.start.id:
+            return []  # no path found
+
+        while node_id is not None:
+            path_ids.insert(0, node_id)
+            node_id = previous[node_id]
+
+        return [node_map[nid] for nid in path_ids]

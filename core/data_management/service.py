@@ -9,10 +9,10 @@ SafeNav Core - Data Management Service
 
 
 from interfaces.i_road_graph_access import I_RoadGraphAccess
-from domain.dto.map_data import GraphData, Edge
-from domain.dto.common import Point, GeoPoint, Area
+from domain.dto.map_data import GraphData
+from domain.dto.common import Point, Area
 
-from common.utils import haversine_distance_m
+from common.utils import haversine_distance_m, convert_networkx_to_graphdata
 
 import osmnx as ox
 from osmnx._errors import GraphSimplificationError
@@ -72,6 +72,7 @@ class DataManagement(I_RoadGraphAccess):
                     dist=area.radius_m,
                     network_type="walk"
                 )
+                print(f"DM: Caching new graph for city {city}")
 
                 ox.save_graphml(G, str(path))
         
@@ -86,7 +87,7 @@ class DataManagement(I_RoadGraphAccess):
         print(f"DM: Retrieved {len(G.nodes)} nodes and {len(G.edges)} edges")
 
         # Convert to GraphData format
-        graph = self._convert_networkx_to_graphdata(G)
+        graph = convert_networkx_to_graphdata(G)
 
         return graph
 
@@ -150,39 +151,6 @@ class DataManagement(I_RoadGraphAccess):
             })
 
         return cached
-    
-    def _convert_networkx_to_graphdata(self, G) -> GraphData:
-        """
-        Convert NetworkX graph (OSMnx) to SafeNav GraphData.
-        """
-
-        nodes = []
-        edges = []
-
-        # Map node_id → GeoPoint
-        node_map = {}
-
-        for node_id, data in G.nodes(data=True):
-            point = GeoPoint(
-                id=str(node_id),
-                lat=data["y"],
-                lon=data["x"]
-            )
-            nodes.append(point)
-            node_map[node_id] = point
-
-        for u, v, data in G.edges(data=True):
-            edge = Edge(
-                from_node=node_map[u],
-                to_node=node_map[v],
-                weight=data.get("length", 1.0)  # meters
-            )
-            edges.append(edge)
-
-        return GraphData(
-            nodes=nodes,
-            edges=edges
-        )
 
     def _area_to_hash(self, area: Area) -> str:
         # Convert area to a stable, sorted representation for saving cache files
