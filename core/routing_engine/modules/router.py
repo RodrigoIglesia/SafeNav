@@ -11,6 +11,8 @@ This version only implements dijkstra algorithm for distance optimization
 from domain.dto.common import GeoPoint
 from domain.dto.map_data import GraphData
 
+from common.utils import haversine_distance_m
+
 from typing import List
 import heapq
 
@@ -67,6 +69,8 @@ class Router:
         """
         Routing Model: A*
         Faster than Dijkstra using spatial heuristic
+        using harvesine distance as heuristic (weight = distance)
+        TODO: Implement heuristic for travel time
         """
         node_map = {node.id: node for node in self.graph.nodes}
 
@@ -76,7 +80,7 @@ class Router:
 
         # f(n) = g(n) + h(n)
         f_score = {node.id: float("inf") for node in self.graph.nodes}
-        f_score[self.start.id] = self._heuristic(self.start, self.goal)
+        f_score[self.start.id] = haversine_distance_m(self.start, self.goal)
 
         previous = {node.id: None for node in self.graph.nodes}
 
@@ -100,9 +104,7 @@ class Router:
                         previous[neighbor_id] = current_id
                         g_score[neighbor_id] = tentative_g
 
-                        f_score[neighbor_id] = tentative_g + self._heuristic(
-                            neighbor_node, self.goal
-                        )
+                        f_score[neighbor_id] = tentative_g + haversine_distance_m(neighbor_node, self.goal)
 
                         heapq.heappush(pq, (f_score[neighbor_id], neighbor_id))
 

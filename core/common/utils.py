@@ -20,6 +20,7 @@ def haversine_distance_m(p1: Point, p2: Point) -> float:
         R = 6371000 # Radius of the Earth in meters
         return R * c
 
+
 def build_area_from_points(origin: Point, destination: Point) -> Area:
         # Compute the center as the midpoint
         center_lat = (origin.lat + destination.lat) / 2
