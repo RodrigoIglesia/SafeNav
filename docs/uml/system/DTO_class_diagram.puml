@@ -1,4 +1,5 @@
 @startuml
+[ ] Actualizar DTOS con las interfaces actuales
 !include docs/uml/theme.puml
 skinparam shadowing false
 skinparam defaultTextAlignment center

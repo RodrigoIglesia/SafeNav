@@ -6,8 +6,7 @@ Implements the path planning algorithms of the router
 This version only implements dijkstra algorithm for distance optimization
 """
 
-# TODO: Improve Dijkstra algorithmm, takes too long with large graphs
-# TODO: Add more algorithms
+# TODO: Review and document algorithms -- investigate further optimization parameters and how to compute them
 from domain.dto.common import GeoPoint
 from domain.dto.map_data import GraphData
 
@@ -22,11 +21,12 @@ class Router:
         self.start = start
         self.goal = goal
         
-    def _dijkstra(self) -> List[GeoPoint]:
+    def _dijkstra(self, optimize="distance") -> List[GeoPoint]:
         """
         Routing Model: Dijkstra
         Applies Dijkstra algorithm to a graph, using the start and end GeoPoint in the graph.
         """
+        
         # Map node.id → GeoPoint for easy lookup
         node_map = {node.id: node for node in self.graph.nodes}
 
@@ -46,9 +46,15 @@ class Router:
 
             # Iterate only over edges starting from current node
             for edge in self.graph.edges:
+                # Check optimization method (distance or travel time)
+                if optimize == "distance":
+                    weight = edge.weight_d
+                else:
+                    weight = edge.weight_t
+                
                 if edge.from_node.id == current_id:
                     neighbor_id = edge.to_node.id
-                    alt_distance = current_dist + edge.weight
+                    alt_distance = current_dist + weight
 
                     if alt_distance < distances[neighbor_id]:
                         distances[neighbor_id] = alt_distance
@@ -64,8 +70,9 @@ class Router:
 
         path = [node_map[node_id] for node_id in path_ids]
         return path
+        
     
-    def _astar(self) -> List[GeoPoint]:
+    def _astar(self, optimize="distance") -> List[GeoPoint]:
         """
         Routing Model: A*
         Faster than Dijkstra using spatial heuristic
@@ -94,11 +101,17 @@ class Router:
                 break
 
             for edge in self.graph.edges:
+                # Check optimization method (distance or travel time)
+                if optimize == "distance":
+                    weight = edge.weight_d
+                else:
+                    weight = edge.weight_t
+                
                 if edge.from_node.id == current_id:
                     neighbor_id = edge.to_node.id
                     neighbor_node = node_map[neighbor_id]
 
-                    tentative_g = g_score[current_id] + edge.weight
+                    tentative_g = g_score[current_id] + edge.weight_t
 
                     if tentative_g < g_score[neighbor_id]:
                         previous[neighbor_id] = current_id

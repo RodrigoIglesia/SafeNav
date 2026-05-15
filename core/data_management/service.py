@@ -80,6 +80,8 @@ class DataManagement(I_RoadGraphAccess):
         """
         _fetch_graph_data
         """
+        print("DM: Loading maps...")
+        # TODO: add signal to send to UI and change loading screen
        
         # Check if area has been cached before > Try to reuse an existing graph
         cached = self._find_best_cached_graph(area, city, eps)

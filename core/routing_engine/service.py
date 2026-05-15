@@ -46,10 +46,12 @@ class RoutingEngine(IRoutingService):
         
         graph_destination = search_nearest_point(graph.nodes, request.destination)
         print(f"RE: Route destination set to {graph_destination}.")
+        # TODO: send signal to UI to change loading screen
         print(f"RE: Calculating route from {(graph_origin.lat, graph_origin.lon)} to {(graph_destination.lat, graph_destination.lon)} coordinates.")
 
         # Load Router class
         router = Router(graph, graph_origin, graph_destination)
+
 
         # Apply paralell path planners
         with ThreadPoolExecutor(max_workers=2) as executor:

@@ -1,24 +1,18 @@
 // src/components/MapStyleSelector.jsx
+//TODO: Add images (miniatures) in map styles to show in the selector
 import "./MapStyleSelector.css";
+import { mapStyles } from "../config/mapStyles";
 
-export default function MapStyleSelector({ onChange }) {
-  const styles = [
-    { name: "Standard", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
-    { name: "Dark", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
-    { name: "Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
-    { name: "Topo", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
-  ];
-
+export default function MapStyleSelector({ onMapStyleChange }) {
   return (
     <div className="map-style-selector">
-      {styles.map((style) => (
-        <button
-          key={style.name}
-          onClick={() => onChange(style.url)}
-        >
-          {style.name}
-        </button>
-      ))}
+      <select onChange={(e) => onMapStyleChange(e.target.value)}>
+        {mapStyles.map((style) => (
+          <option key={style.name} value={style.url}>
+            {style.name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

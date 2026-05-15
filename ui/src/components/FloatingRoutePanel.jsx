@@ -1,9 +1,9 @@
 // src/components/FloatingRoutePanel.jsx
 
-// TODO: When interacting with floating route pannel, MapView shall not be affected
-
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import L from "leaflet";
 import "./FloatingRoutePanel.css";
+import MapStyleSelector from "./MapStyleSelector";
 import { requestRoute } from "../api.js";
 
 let originTimeout;
@@ -77,12 +77,14 @@ export default function FloatingRoutePanel({
 
   const [expanded, setExpanded] = useState(true);
 
-  const styles = [
-    { name: "Light", url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" },
-    { name: "Std", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" },
-    { name: "Dark", url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" },
-    { name: "Topo", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" }
-  ];
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (panelRef.current) {
+      L.DomEvent.disableClickPropagation(panelRef.current);
+      L.DomEvent.disableScrollPropagation(panelRef.current);
+    }
+  }, []);
 
   // ==============================
   // Submit
@@ -159,8 +161,10 @@ export default function FloatingRoutePanel({
   };
 
   return (
-    <div className={`route-panel ${expanded ? "expanded" : "collapsed"}`}>
-
+    <div
+      ref={panelRef}
+      className={`route-panel ${expanded ? "expanded" : "collapsed"}`}
+    >
       <div className="route-panel-header">
         <span>Route Planner</span>
         <button
@@ -173,7 +177,6 @@ export default function FloatingRoutePanel({
 
       {expanded && (
         <div className="route-panel-body">
-
           {/* CITY SELECTOR */}
           <div className="city-selector">
             <select
@@ -187,7 +190,9 @@ export default function FloatingRoutePanel({
               ))}
             </select>
           </div>
-
+          {/*Map Style selector*/}
+          <MapStyleSelector onMapStyleChange={onMapStyleChange} />
+          
           {/* ORIGIN */}
           <input
             type="text"
@@ -195,7 +200,6 @@ export default function FloatingRoutePanel({
             value={origin}
             onChange={(e) => handleOriginChange(e.target.value)}
           />
-
           {originSuggestions.length > 0 && (
             <div className="suggestions">
               {originSuggestions.map((place) => (
@@ -221,7 +225,6 @@ export default function FloatingRoutePanel({
             value={destination}
             onChange={(e) => handleDestinationChange(e.target.value)}
           />
-
           {destinationSuggestions.length > 0 && (
             <div className="suggestions">
               {destinationSuggestions.map((place) => (
@@ -240,20 +243,10 @@ export default function FloatingRoutePanel({
             </div>
           )}
 
+          {/*Calculate Route Buttom*/}
           <button onClick={handleSubmit}>
             Calculate Route
           </button>
-
-          <div className="map-style-selector">
-            <select onChange={(e) => onMapStyleChange(e.target.value)}>
-              {styles.map((style) => (
-                <option key={style.name} value={style.url}>
-                  {style.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
         </div>
       )}
     </div>

@@ -9,7 +9,7 @@ Defines internal data structures related to map and topological data:
 """
 
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 from .common import GeoPoint, Polygon
 
@@ -20,16 +20,30 @@ class Edge(BaseModel):
     """Directed weighted edge in the road graph."""
     from_node: GeoPoint = Field(..., description="Start node of the edge")
     to_node: GeoPoint = Field(..., description="End node of the edge")
-    weight: float = Field(..., ge=0, description="Traversal cost (distance, time, etc.)")
+    weight_d: float = Field(..., ge=0, description="Traversal cost (distance)")
+    weight_t: float = Field(..., ge=0, description="Traversal cost (time)")
 
 
 class GraphData(BaseModel):
     """
     Minimal navigable graph used by the Routing Engine.
-    No tiles, no zoom, no visual metadata.
     """
     nodes: List[GeoPoint] = Field(..., description="Graph nodes (road intersections, junctions)")
     edges: List[Edge] = Field(..., description="Directed edges connecting graph nodes")
+    adjacency: Dict[int, List[Edge]] = Field(
+        default_factory=dict,
+        description="Adjacency list: node_id → outgoing edges"
+    )
+
+    def build_adjacency(self):
+        """
+        Builds adjacency list from edges.
+        Must be called after graph creation.
+        """
+        self.adjacency = {}
+        for edge in self.edges:
+            node_id = edge.from_node.id
+            self.adjacency.setdefault(node_id, []).append(edge)
 
 
 #TODO: Tile, MapMetadata, MapData, MapRequest and MapDataResponse are not currently used >> To be removed

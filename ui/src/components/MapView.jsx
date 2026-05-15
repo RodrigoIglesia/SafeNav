@@ -43,11 +43,12 @@ function FitBounds({ origin, destination }) {
 // Fit city bounds
 function FitCityBounds({ bounds }) {
   const map = useMap();
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (bounds) {
+    if (bounds && !initialized.current) {
       map.fitBounds(bounds, { padding: [40, 40] });
-      map.setMaxBounds(bounds);
+      initialized.current = true;
     }
   }, [bounds, map]);
 

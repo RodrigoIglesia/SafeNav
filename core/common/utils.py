@@ -40,34 +40,74 @@ def search_nearest_point(nodes: List[GeoPoint], point: Point) -> GeoPoint:
         return nearest
 
 def convert_networkx_to_graphdata(G) -> GraphData:
-        """
-        Convert NetworkX graph (OSMnx) to SafeNav GraphData.
-        """
+    """
+    Convert NetworkX graph (OSMnx) to SafeNav GraphData with adjacency.
+    """
 
-        nodes = []
-        edges = []
+    nodes = []
+    edges = []
+    node_map = {}
 
-        # Map node_id → GeoPoint
-        node_map = {}
-
-        for node_id, data in G.nodes(data=True):
-            point = GeoPoint(
-                id=str(node_id),
-                lat=data["y"],
-                lon=data["x"]
-            )
-            nodes.append(point)
-            node_map[node_id] = point
-
-        for u, v, data in G.edges(data=True):
-            edge = Edge(
-                from_node=node_map[u],
-                to_node=node_map[v],
-                weight=data.get("length", 1.0)  # meters
-            )
-            edges.append(edge)
-
-        return GraphData(
-            nodes=nodes,
-            edges=edges
+    # -------------------------
+    # Build nodes
+    # -------------------------
+    for node_id, data in G.nodes(data=True):
+        point = GeoPoint(
+            id=str(node_id),
+            lat=data["y"],
+            lon=data["x"]
         )
+        nodes.append(point)
+        node_map[node_id] = point
+
+    # -------------------------
+    # Build edges
+    # -------------------------
+    adjacency = {}
+
+    for u, v, data in G.edges(data=True):
+
+        # ---- distance ----
+        length = float(data.get("length", 1.0))  # meters
+
+        # ---- maxspeed normalization ----
+        maxspeed = data.get("maxspeed", 30)
+
+        if isinstance(maxspeed, list):
+            maxspeed = maxspeed[0]
+
+        if isinstance(maxspeed, str):
+            maxspeed = ''.join(c for c in maxspeed if c.isdigit() or c == '.')
+
+        try:
+            maxspeed = float(maxspeed)
+        except:
+            maxspeed = 30.0  # fallback km/h
+
+        # avoid invalid speeds
+        maxspeed = max(maxspeed, 1.0)
+
+        speed_ms = maxspeed / 3.6
+        travel_time = length / speed_ms
+
+        # ---- edge creation ----
+        edge = Edge(
+            from_node=node_map[u],
+            to_node=node_map[v],
+            weight_d=length,
+            weight_t=travel_time
+        )
+
+        edges.append(edge)
+
+        # ---- adjacency build (IMPORTANT) ----
+        adjacency.setdefault(u, []).append(edge)
+
+    # -------------------------
+    # return full graph
+    # -------------------------
+    return GraphData(
+        nodes=nodes,
+        edges=edges,
+        adjacency=adjacency
+    )
