@@ -49,8 +49,10 @@ class Router:
                 # Check optimization method (distance or travel time)
                 if optimize == "distance":
                     weight = edge.weight_d
-                else:
+                elif optimize == "eta":
                     weight = edge.weight_t
+                else:
+                    print("RE: No valid optimization parameter")
                 
                 if edge.from_node.id == current_id:
                     neighbor_id = edge.to_node.id
@@ -69,7 +71,11 @@ class Router:
             node_id = previous[node_id]
 
         path = [node_map[node_id] for node_id in path_ids]
-        return path
+
+        distance, eta = self._estimate_dist_eta(self.graph, path_ids)
+
+        return path, distance, eta
+
         
     
     def _astar(self, optimize="distance") -> List[GeoPoint]:
@@ -77,7 +83,6 @@ class Router:
         Routing Model: A*
         Faster than Dijkstra using spatial heuristic
         using harvesine distance as heuristic (weight = distance)
-        TODO: Implement heuristic for travel time
         """
         node_map = {node.id: node for node in self.graph.nodes}
 
@@ -104,8 +109,10 @@ class Router:
                 # Check optimization method (distance or travel time)
                 if optimize == "distance":
                     weight = edge.weight_d
-                else:
+                elif optimize == "eta":
                     weight = edge.weight_t
+                else:
+                    print("RE: No valid optimization parameter")
                 
                 if edge.from_node.id == current_id:
                     neighbor_id = edge.to_node.id
@@ -132,4 +139,33 @@ class Router:
             path_ids.insert(0, node_id)
             node_id = previous[node_id]
 
-        return [node_map[nid] for nid in path_ids]
+        path = [node_map[nid] for nid in path_ids]
+        distance, eta = self._estimate_dist_eta(self.graph, path_ids)
+
+        return path, distance, eta
+    
+
+    def _estimate_dist_eta(self, graph, path_ids):
+        """
+        Auxiliary function to compute the estimated time arrival of a calculated route
+        """
+        # -------------------------
+        # Compute total distance & ETA
+        # -------------------------
+
+        total_distance = 0
+        total_eta = 0
+
+        for i in range(len(path_ids) - 1):
+
+            from_id = path_ids[i]
+            to_id = path_ids[i + 1]
+
+            # Find corresponding edge
+            for edge in graph.edges:
+                if (edge.from_node.id == from_id and edge.to_node.id == to_id):
+                    total_distance += edge.weight_d
+                    total_eta += edge.weight_t
+                    break
+
+        return total_distance, total_eta

@@ -13,8 +13,8 @@ from routing_engine.modules.router import Router
 
 from common.utils import search_nearest_point, build_area_from_points
 from uuid import uuid4
-
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 
 class RoutingEngine(IRoutingService):
@@ -52,49 +52,72 @@ class RoutingEngine(IRoutingService):
         # Load Router class
         router = Router(graph, graph_origin, graph_destination)
 
+        routing_algorithms = {
+            "dijkstra_d": partial(router._dijkstra, optimize="distance"),
+            "astar_d": partial(router._astar, optimize="distance"),
 
-        # Apply paralell path planners
-        with ThreadPoolExecutor(max_workers=2) as executor:
+            "dijkstra_t": partial(router._dijkstra, optimize="eta"),
+            "astar_t": partial(router._astar, optimize="eta"),
+        }
 
-            future_dijkstra = executor.submit(router._dijkstra)
-            future_astar = executor.submit(router._astar)
+        # Execute algorithms in parallel
+        routes = {}
 
-            dijkstra_path = future_dijkstra.result()
-            astar_path = future_astar.result()
+        with ThreadPoolExecutor(max_workers=len(routing_algorithms)) as executor:
 
-        print(f"RE: Dijkstra path: {len(dijkstra_path)} points")
-        print(f"RE: A* path: {len(astar_path)} points")
+            # Submit all algorithms
+            futures = {
+                name: executor.submit(method)
+                for name, method in routing_algorithms.items()
+            }
 
-        #TODO: Create convention for candidate ID instead of randoum uuid
-        candidate_dijkstra = RouteCandidate(
-            id=str(uuid4()),
-            geometry={
-                "coordinates": dijkstra_path
-            },
-            #TODO: calculate proper values
-            eta=900,
-            distance=1.2,
-        )
+            # Collect results
+            for name, future in futures.items():
 
-        candidate_astar = RouteCandidate(
-            id=str(uuid4()),
-            geometry={
-                "coordinates": astar_path
-            },
-            #TODO: calculate proper values
-            eta=900,
-            distance=1.2,
-        )
+                path, distance, eta = future.result()
+
+                routes[name] = {
+                    "path": path,
+                    "distance": distance,
+                    "eta": eta,
+                }
+
+        # Debug output
+        for name, route in routes.items():
+            print(
+                f"RE: {name} path: "
+                f"{len(route['path'])} points"
+                f"Distance: {route['distance']/1000} km."
+                f"Time to arrive: {route['eta']/60} min."
+            )
+
+        # Generate route candidates
+        candidates = []
+
+        for algorithm_name, route in routes.items():
+
+            candidate = RouteCandidate(
+                id=str(uuid4()),
+                geometry={
+                    "coordinates": route["path"]
+                },
+                eta=route["eta"],
+                distance=route["distance"],
+            )
+
+            candidates.append(candidate)
+
 
         return RouteCandidates(
             request_id=str(uuid4()),
-            items = [candidate_dijkstra, candidate_astar]
+            items=candidates
         )
 
     def get_route_scores(self, candidates: RouteCandidates) -> RouteScores:
         """
         Retrieve evaluated scores for a previously generated route request.
         """
+        # Call context analyzer
 
         # TODO: Mock score
         scores = []

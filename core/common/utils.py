@@ -70,24 +70,7 @@ def convert_networkx_to_graphdata(G) -> GraphData:
         # ---- distance ----
         length = float(data.get("length", 1.0))  # meters
 
-        # ---- maxspeed normalization ----
-        maxspeed = data.get("maxspeed", 30)
-
-        if isinstance(maxspeed, list):
-            maxspeed = maxspeed[0]
-
-        if isinstance(maxspeed, str):
-            maxspeed = ''.join(c for c in maxspeed if c.isdigit() or c == '.')
-
-        try:
-            maxspeed = float(maxspeed)
-        except:
-            maxspeed = 30.0  # fallback km/h
-
-        # avoid invalid speeds
-        maxspeed = max(maxspeed, 1.0)
-
-        speed_ms = maxspeed / 3.6
+        speed_ms = 1.4 # Human walking avg m/s
         travel_time = length / speed_ms
 
         # ---- edge creation ----
