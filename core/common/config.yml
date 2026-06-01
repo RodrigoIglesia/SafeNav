@@ -1,0 +1,18 @@
+active_city: madrid
+
+cities:
+  madrid:
+    name: "Madrid, Spain"
+    bounds:
+      south: 40.312
+      north: 40.643
+      west: -3.888
+      east: -3.517
+
+  munich:
+    name: "Munich, Germany"
+    bounds:
+      south: 48.061
+      north: 48.248
+      west: 11.360
+      east: 11.722

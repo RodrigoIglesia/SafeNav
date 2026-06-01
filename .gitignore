@@ -60,3 +60,7 @@ ui/.vite/
 *.dwo
 
 *.png
+*.html
+
+core/cache/
+core/graph_cache/

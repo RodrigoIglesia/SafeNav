@@ -1,18 +1,12 @@
 /* src/components/MapStyleSelector.css */
 .map-style-selector {
-    position: absolute;
-    top: 20px;
-    left: 330px;
-    z-index: 1000;
+    width: 50%;
     /* Transparent glass effect */
     background: rgba(255, 255, 255, 0.85);
     opacity: 0.9;
 
     background: rgba(255,255,255,0.85);
-    backdrop-filter: blur(6px);
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
     font-family: sans-serif;
     display: flex;
     flex-direction: column;

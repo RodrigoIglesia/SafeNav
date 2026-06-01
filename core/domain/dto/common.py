@@ -2,7 +2,7 @@
 common.py
 ---------
 Defines shared data structures used across multiple SafeNav DTOs:
-- Spatial primitives (GeoPoint, Polyline, Polygon, Area)
+- Spatial primitives (GeoPoint, Point, Polyline, Polygon, Area)
 - Route preferences and metadata models
 """
 
@@ -13,25 +13,40 @@ from datetime import datetime
 
 # === Spatial primitives ===
 
-class GeoPoint(BaseModel):
-    """Represents a geographic coordinate (WGS84)."""
+class Point(BaseModel):
+    """Represent a geographic coordinate (WGS84) alone"""
     lat: float = Field(..., description="Latitude in decimal degrees (WGS84)")
     lon: float = Field(..., description="Longitude in decimal degrees (WGS84)")
 
 
-class Polyline(BaseModel):
+class GeoPoint(Point):
+    """Represents a geographic coordinate (WGS84) in a graph."""
+    id: str = Field(..., description="Identifier of a certain geographical point")
+
+# class GeoPoint(BaseModel):
+#     """Represents a geographic coordinate (WGS84) in a graph."""
+#     id: str = Field(..., description="Identifier of a certain geographical point")
+#     lat: float = Field(..., description="Latitude in decimal degrees (WGS84)")
+#     lon: float = Field(..., description="Longitude in decimal degrees (WGS84)")
+
+
+class Path(BaseModel):
     """List of ordered geographic points forming a route path."""
-    coordinates: List[GeoPoint] = Field(..., description="Ordered list of points representing a line")
+    coordinates: List[GeoPoint] = Field(..., description="Ordered list of geographic points representing a line")
+
+class Polyline(BaseModel):
+    """List of ordered points."""
+    coordinates: List[Point] = Field(..., description="Ordered list of points representing a line")
 
 
 class Polygon(BaseModel):
     """Represents a closed polygonal area."""
-    coordinates: List[GeoPoint] = Field(..., description="Vertices of the polygon in order")
+    coordinates: List[Point] = Field(..., description="Vertices of the polygon in order")
 
 
 class Area(BaseModel):
     """Represents a circular area of interest around a central point."""
-    center: GeoPoint = Field(..., description="Central point of the area")
+    center: Point = Field(..., description="Central point of the area")
     radius_m: float = Field(..., gt=0, description="Radius in meters")
 
 

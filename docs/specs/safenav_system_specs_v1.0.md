@@ -1,5 +1,7 @@
-
-[ ] TODO: Hay que eliminar I_MapView con Data Management. La interfaz la implementa directamente la UI con OSM a través de Leaflet. Simplifica el diseño y simplifica la implementación.
+[ ] TODO: Change design and interfaces for new city change functionality.
+[ ] The system must be multi-city. when city changes in the UI, the system must know it and load a graph for the entire new cities.
+[ ] For each route request, the city will be sent to the system
+[ ] For performance porpouses, the system must know when a city has been loaded before, by searching in a cached memory
 
 # 1. Descripción del Sistema
 El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo proporcionar a los peatones rutas **seguras o confortables** en entornos urbanos.
@@ -43,16 +45,15 @@ Se consideran los siguientes sistemas externos:
 SafeNav se compone de los siguientes subsistemas:
 | ID | Subsistema | Descripción General | Responsabilidades Principales | Entradas | Salidas |
 |----|-------------|---------------------|-------------------------------|-----------|----------|
-| **S1** | **User Interface (UI)** | Subsistema cliente que permite la interacción entre el usuario y el sistema SafeNav. Puede implementarse como aplicación web, móvil o de escritorio. | - Recibir entradas del usuario (origen, destino, preferencias).<br>- Enviar solicitudes al sistema SafeNav Core.<br>- Mostrar al usuario las rutas sugeridas, puntuaciones de confort y alertas contextuales.<br>- Gestionar la experiencia visual e interacción. | Datos introducidos por el usuario. | Rutas, puntuaciones y alertas mostradas al usuario. |
-| **S2** | **SafeNav Core** | Subsistema principal que contiene toda la lógica de negocio del sistema. Se encarga de procesar las solicitudes de ruta, generar recomendaciones y obtener la información contextual necesaria. | - Recibir solicitudes desde la UI.<br>- Calcular rutas y evaluar su confort y seguridad.<br>- Integrar información proveniente de datos externos (mapas, clima, open data).<br>- Devolver resultados listos para presentación. | Solicitudes de la UI.<br>Datos externos de fuentes abiertas. | Rutas optimizadas con evaluación contextual. |
+| **S1** | **User Interface (UI)** | Subsistema cliente que permite la interacción entre el usuario y el sistema SafeNav. Puede implementarse como aplicación web, móvil o de escritorio. | - Renderizar rutas calculadas, putos de origen, destino y otros puntos de interés en la ruta, y mapa. Actúa como interfaz entre el usuario y el sistema backend, capturando los parámetros de entrada y configuración introducidos y mostrando los resultados. | Datos introducidos por el usuario. | Rutas, puntuaciones y alertas mostradas al usuario. |
+| **S2** | **SafeNav Core** | Subsistema principal que contiene toda la lógica de negocio del sistema. Se encarga de procesar las solicitudes de ruta, generar recomendaciones y obtener la información contextual necesaria. | - Recibir solicitudes desde la UI.<br>- Calcular rutas y evaluar su confort y seguridad.<br>- Integrar información proveniente de datos externos (grafos, clima, open data).<br>- Devolver resultados listos para presentación. | Solicitudes de la UI.<br>Datos externos de fuentes abiertas. | Rutas optimizadas con evaluación contextual. |
 ---
 
 # 3. Arquitectura Lógica
 ## Subsistema S1: User Interface (UI)
-
 | ID | Componente | Descripción General | Responsabilidades Principales | Entradas | Salidas |
 |----|-------------|--------------------|-------------------------------|-----------|----------|
-| **C1** | **User Interface (UI)** | Gestiona toda la interacción entre el usuario y el sistema SafeNav. Proporciona las vistas y controles para definir rutas, mostrar resultados y emitir alertas contextuales. | - Capturar solicitudes del usuario (“Go Home”, destino, preferencias).<br>- Mostrar rutas, puntuaciones de seguridad/confort y alertas.<br>- Gestionar parámetros de usuario y configuración de preferencias.<br>- Enviar solicitudes al subsistema **SafeNav Core** a través de la API REST. | Datos introducidos por el usuario (origen, destino, preferencias). | Solicitudes HTTP/JSON a API Layer (SafeNav Core).<br>Visualización de rutas, puntuaciones y alertas. |
+| **C1** | **User Interface (UI)** | Gestiona toda la interacción entre el usuario y el sistema SafeNav. Proporciona las vistas y controles para definir rutas, mostrar resultados y emitir alertas contextuales. | - Renderiza el mapa en función de la ciudad seleccionada por el usuario y los puntos de origen y destino introducidos. UI implementa una interfaz directa con el servicio de provisionamiento de ´tiles´ (externo) <br>- Recibir entradas del usuario (origen, destino, preferencias).<br>- Enviar solicitudes al sistema SafeNav Core.<br>- Mostrar al usuario las rutas sugeridas, puntuaciones de confort y alertas contextuales.<br>- Gestionar la experiencia visual e interacción.<br>- Enviar solicitudes al subsistema **SafeNav Core** a través de la API REST. | Datos introducidos por el usuario (origen, destino, preferencias). | Solicitudes HTTP/JSON a API Layer (SafeNav Core).<br>Visualización de rutas, puntuaciones y alertas. |
 
 ---
 
@@ -63,7 +64,7 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 
 | ID | Componente | Descripción General | Responsabilidades Principales | Entradas | Salidas |
 |----|-------------|--------------------|-------------------------------|-----------|----------|
-| **C2** | **API Layer (HTTP Controller)** | Capa de entrada del núcleo SafeNav. Expone los servicios del sistema mediante una API REST para la UI. | - Recibir solicitudes HTTP desde la UI.<br>- Validar datos y convertirlos en objetos internos (`RouteRequest`, `Preferences`).<br>- Orquestar la ejecución de los módulos internos (`RE`, `CA`, `DM`).<br>- Devolver resultados en formato JSON. | Solicitudes REST desde la UI. | Respuestas JSON con rutas y puntuaciones. |
+| **C2** | **API Layer (HTTP Controller)** | Capa de entrada del núcleo SafeNav. Expone los servicios del sistema mediante una API REST para la UI. API actúa como orquestrador del sistema, gestionando la secuencia de llamadas a los servicios backend. | - Recibir solicitudes HTTP desde la UI.<br>- Validar datos y convertirlos en objetos internos (`RouteRequest`, `Preferences`).<br>- Orquestar la ejecución de los módulos internos (`RE`, `CA`, `DM`).<br>- Devolver resultados en formato JSON. | Solicitudes REST desde la UI. | Respuestas JSON con rutas y puntuaciones. |
 | **C3** | **Routing Engine (RE)** | Núcleo de cálculo de rutas. Genera y optimiza rutas posibles utilizando los datos cartográficos y las condiciones actuales. | - Generar rutas candidatas a partir de los datos del mapa.<br>- Calcular ETA, distancia y costo de trayecto.<br>- (Opcionalmente) Solicitar evaluación contextual al `CA` cuando el flujo lo requiera.<br>- Devuelve rutas candidatas o rutas enriquecidas con puntuaciones. | Datos del mapa (desde `DM`).<br>Solicitudes internas (desde `API Layer`). | Rutas optimizadas con puntuaciones. |
 | **C4** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE`. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
 | **C5** | **Data Management (DM)** | Capa de gestión e integración de datos externos. Se encarga de conectar el sistema con las fuentes abiertas (`MapAPI`, `MeteoAPI`, `OpenDataAPI`), procesar los datos y entregarlos en formato interno. | - Obtener y actualizar datos externos.<br>- Preprocesar, normalizar y cachear información.<br>- Proveer datos consistentes a `RE` y `CA`.<br>- Mantener coherencia temporal y semántica de los datos. | Peticiones de datos desde `RE` y `CA`.<br>Datos de servicios externos. | Datos preparados (Grafos de mapas, clima, contexto urbano). |
@@ -218,10 +219,12 @@ El usuario selecciona un destino e introduce sus preferencias de ruta.
 3. La API delega en el Routing Engine el cálculo de rutas candidatas.
 4. El Routing Engine solicita a Data Management los datos cartográficos en formato de grafo (`GraphData`).
 5. Data Management obtiene los datos cartográficos desde MapAPI y los transforma en una representación topológica.
-6. El Routing Engine calcula las rutas candidatas (ETA, distancia, geometría).
+6. El Routing Engine calcula las rutas candidatas (ETA, distancia). En caso de evaluar varios candidatos, la estimación de dichas rutas se realizarán en procesos paralelos sin impacto acumulado en el tiempo de procesado.
 7. El Routing Engine devuelve a la API un conjunto de `RouteCandidates`.
 
-En este punto, el sistema puede activar el Escenario 2 para evaluación contextual o devolver directamente las rutas candidatas.
+En este punto, el sistema puede activar el Escenario 3 para evaluación contextual -Implementando la interfaz I_routing_service::get_route_scores- o devolver directamente las rutas candidatas.
+
+UI renderizará tantas rutas candidatas como sean retornadas en este escenario.
 
 ### Resultado
 

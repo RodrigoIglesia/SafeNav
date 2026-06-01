@@ -12,7 +12,9 @@ def create_route(request_body: RouteRequest, request: Request):
     routing_service: IRoutingService = request.app.state.routing_service
 
     candidates = routing_service.calculate_routes(request_body)
+    print(f"API: Response from routing engine: {candidates} routes.")
     scores = routing_service.get_route_scores(candidates)
+    print(f"Routes scored") #TODO: complete with real evaluations
 
     metadata = ResponseMetadata(
         timestamp=datetime.now(timezone.utc),

@@ -4,6 +4,7 @@ SafeNav Core - API Layer Service
 Initializes the FastAPI service and registers HTTP controllers
 for SafeNav Core capabilities.
 """
+# TODO: API must send the received city to Routing Engine.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
