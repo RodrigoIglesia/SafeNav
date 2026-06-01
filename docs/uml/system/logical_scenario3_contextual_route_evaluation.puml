@@ -8,29 +8,24 @@ on system configuration or availability of contextual data."
 end note
 
 participant "API Layer" as API
-participant "Routing Engine" as RE
 participant "Context Analyzer" as CA
 participant "Data Management" as DM
 participant "Meteo Data Source" as Meteo
 participant "Open Data Source" as OpenData
 
-API -> RE : request route evaluation\n(RouteCandidates)
+API -> CA : I_ContextService: evaluate routes\n(RouteCandidates)
 
-RE -> CA : evaluate routes\n(RouteCandidates)
+CA -> DM : I_ContextDataAcces: request weather data
+DM -> Meteo : I_OpenDataAcces: fetch weather conditions
+Meteo --> DM : I_OpenDataAcces: WeatherData
+DM --> CA : I_ContextDataAcces: WeatherData
 
-CA -> DM : request weather data
-DM -> Meteo : fetch weather conditions
-Meteo --> DM : WeatherData
-DM --> CA : WeatherData
+CA -> DM : I_ContextDataAcces: request urban context data
+DM -> OpenData : I_OpenDataAcces: fetch urban data
+OpenData --> DM : I_OpenDataAcces: UrbanData
+DM --> CA : I_ContextDataAcces: UrbanData
 
-CA -> DM : request urban context data
-DM -> OpenData : fetch urban data
-OpenData --> DM : UrbanData
-DM --> CA : UrbanData
-
-CA --> RE : RouteScores
-
-RE --> API : RouteScores
+CA --> API : I_ContextService: RouteScores
 
 API --> API : enrich RouteResponse\n(with contextual scores)
 @enduml

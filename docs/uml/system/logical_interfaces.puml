@@ -31,15 +31,14 @@ package "SafeNav internal interfaces" as Internal {
     component "Routing Engine\n(RE)" as RE
     interface "I_RoutingService" as IRoute
     IRoute : + calculate_routes(request : routeRequest) : RouteCandidates
-    IRoute : + get_routte_scores(candidates : RouteCandidates) : RouteScores
     API --> IRoute
     IRoute -- RE : implements
 
     component "Context Analyzer\n(CA)" as CA
     interface "I_ContextService" as IContext
     IContext : + evaluateRoutes(routes : RouteCandidates) : RouteScores
-    RE -right-> IContext : uses
-    IContext -right- CA : implements
+    API -right-> IContext : uses
+    IContext -down- CA : implements
 
     component "Data Management (DM)" as DM
     interface "I_RoadGraphAccess" as IGraph

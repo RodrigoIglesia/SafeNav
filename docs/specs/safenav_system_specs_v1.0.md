@@ -78,7 +78,7 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 | ID | Nombre de Interfaz | Descripción | Datos Principales |
 |----|--------------------|-------------|-------------------|
 | **I_HTTP_Routes** | Interfaz HTTP de Rutas | Expone los endpoints HTTP/JSON que permiten a la interfaz de usuario solicitar rutas, consultar resultados y recibir puntuaciones o alertas. No se define en Pydantic, ya que es una llamada API. | `RouteRequest`, `RouteResponse` |
-| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `Area`, `RouteCandidates`, `RouteScores` |
+| **I_RoutingService** | Servicio de Generación de Rutas | Proporciona servicios internos para calcular rutas candidatas basadas en origen, destino y configuración de usuario. | `Area`, `RouteCandidates` |
 | **I_ContextService** | Servicio de Evaluación Contextual | Evalúa las rutas según factores ambientales (temperatura, sombra, alertas) y devuelve puntuaciones agregadas de confort y seguridad. | `RouteCandidates`, `RouteScores` |
 | **I_RoadGraphAccess** | Acceso a grafos de representación de rutas de mapas (nodos y aristas) | Proporciona acceso a estructuras de datos en formato de grafo para representar mapas. | `Area`, `GraphData` |
 | **I_ContextDataAccess** | Acceso a Datos obtenidos de fuentes externas (urbanos y meteorológicos) | Proporciona acceso estructurado a datos cartográficos, meteorológicos y urbanos ya procesados o en caché dentro del sistema. | `WeatherData`, `UrbanData` |
@@ -97,8 +97,8 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 
 | Componente | Interfaces Implementadas | Interfaces Utilizadas |
 |-------------|--------------------------|------------------------|
-| **User Interface (UI)** | — | `I_HTTP_Routes`, `I_MapDataAccess_` |
-| **API Layer** | `I_HTTP_Routes` | `I_RoutingService`, `I_MapView` |
+| **User Interface (UI)** | — | `I_HTTP_Routes`, `I_MapDataAccess_`, `I_MapView`|
+| **API Layer** | `I_HTTP_Routes` | `I_RoutingService`, `I_RoutingService` |
 | **Routing Engine (RE)** | `I_RoutingService` | `I_RoadGraphAccess` |
 | **Context Analyzer (CA)** | `I_ContextService` | `I_ContextDataAccess` |
 | **Data Management (DM)** | `I_ContextDataAccess`, `I_RoadGraphAccess`, `I_MeteoDataAccess`, `I_OpenDataAccess` | — |
@@ -246,7 +246,6 @@ Su ejecución puede depender de la configuración del sistema o de la disponibil
 ### Componentes Involucrados
 
 - API Layer  
-- Routing Engine (RE)  
 - Context Analyzer (CA)  
 - Data Management (DM)  
 - Meteo Data Source (MeteoAPI)  
@@ -254,14 +253,12 @@ Su ejecución puede depender de la configuración del sistema o de la disponibil
 
 ### Descripción del Flujo
 
-1. La API solicita al Routing Engine la evaluación contextual de las rutas.
-2. El Routing Engine delega en el Context Analyzer.
-3. El Context Analyzer solicita a Data Management datos meteorológicos y urbanos.
-4. Data Management obtiene los datos desde las fuentes externas correspondientes.
-5. El Context Analyzer calcula puntuaciones de confort y seguridad para cada ruta o segmento.
-6. Las puntuaciones (`RouteScores`) se devuelven al Routing Engine.
-7. El Routing Engine devuelve las puntuaciones a la API.
-8. La API enriquece el `RouteResponse` con los scores.
+1. La API solicita al Context Analizer la evaluación contextual de las rutas.
+2. El Context Analyzer solicita a Data Management datos meteorológicos y urbanos.
+3. Data Management obtiene los datos desde las fuentes externas correspondientes.
+4. El Context Analyzer calcula puntuaciones de confort y seguridad para cada ruta o segmento.
+5. Las puntuaciones (`RouteScores`) se devuelven a la API.
+6. La API enriquece el `RouteResponse` con los scores.
 
 ### Resultado
 

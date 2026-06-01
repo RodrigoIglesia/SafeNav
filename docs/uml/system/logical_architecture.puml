@@ -27,10 +27,10 @@ component "SafeNav Core" <<system>> as Core {
   ' === Internal Interfaces ===
   API -down-> RE :    Route request
   RE .up.> API :      Route results
-  RE -right-> CA :    Route candidates
+  API -down-> CA :    Route candidates
   API -down-> DM :    Map view request
   DM .up.> API :      Map view response
-  CA .left.> RE :      Route + scores
+  CA .up.> API :      Route + scores
   CA -down-> DM :     Context data request
   DM .up.> CA :       Context data response
   RE -down-> DM :     Graph data request
