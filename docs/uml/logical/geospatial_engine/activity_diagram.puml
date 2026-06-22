@@ -1,0 +1,79 @@
+@startuml
+!include docs/uml/theme.puml
+
+title Geospatial Engine - Context Generation (Functional Decomposition)
+
+start
+
+    :getRoutesContext(routes);
+
+partition "Call Data Management" {
+    :getWeatherData(routes);
+    :getUrbanData(routes);
+
+    :Create empty ContextDescription;
+}
+
+repeat
+
+    :Select RouteCandidate;
+
+    partition "Weather Context Creation" {
+
+        :buildWeatherContext(route, WeatherData);
+
+        :Sample route geometry;
+
+        :Associate weather observations;
+        :Create WeatherContext;
+    }
+
+    partition "Urban Context Creation" {
+
+        :buildUrbanContext(route, UrbanData);
+
+        fork
+
+            :findRelevantShadowZones;
+            :Compute Route ∩ ShadowZones;
+
+        fork again
+
+            :findRelevantWaterPoints;
+            :Compute distance(Route, WaterPoint);
+
+        fork again
+
+            :findRelevantPoliceOffices;
+            :Compute distance(Route, PoliceOffice);
+
+        fork again
+
+            :findRelevantParks;
+            :Compute Route ∩ Park;
+
+        fork again
+
+            :findRelevantBenches;
+            :Compute distance(Route, Bench);
+
+        end fork
+
+        :Create UrbanContext;
+    }
+
+    :buildRouteContext(
+        route,
+        WeatherContext,
+        UrbanContext
+    );
+
+    :Append RouteContext to ContextDescription;
+
+repeat while (More RouteCandidates?)
+
+:Return ContextDescription;
+
+stop
+
+@enduml

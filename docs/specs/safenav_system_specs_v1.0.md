@@ -11,6 +11,7 @@ El sistema **SafeNav** (en su versión 1.0 - prototipo) tiene como objetivo prop
 **SafeNav** consiste en los siguientes módulos:
 - **Interfaz de Usuario (UI)**: Proporciona la interacción entre el usuario y el sistema. Gestiona las solicitudes de rutas, muestra los caminos recomendados y comunica retroalimentación sobre confort/seguridad.
 - **Motor de Enrutamiento (RE)**: Genera rutas candidatas y las envía al analizador de contexto. Utiliza datos cartográficos para calcular rutas y optimizarlas en función del tiempo estimado de llegada (ETA) y la distancia.
+- **Motor de representación Geoespacial**: Obtiene una representación contextual de las rutas, de modo que puedan ser evaluadas en base al estado de su contexto (sombras, puntos de agua, zonas seguras, etc.)
 - **Analizador de Contexto (CA)**: Procesa y fusiona datos ambientales externos con las rutas candidatas para evaluar su seguridad y confort. El componente asigna una “puntuación” a cada ruta (la puntuación puede aplicarse a toda la ruta o a partes de ella) y devuelve las rutas con sus respectivas puntuaciones.
 - **Gestión de Datos (DM)**: Implementa las interfaces con las fuentes de datos externas. Preprocesa y prepara los datos para alimentar al RE y al CA.
 ---
@@ -30,7 +31,6 @@ En este capítulo se listan las funcionalidades llevadas a cabo por el sistema.
 ---
 
 # 2. Arquitectura del sistema
-![alt text](system_architecture.png)
 ## Sistemas Externos
 Se consideran los siguientes sistemas externos:
 
@@ -66,8 +66,9 @@ Cada componente cumple un rol específico dentro del flujo de procesamiento de u
 |----|-------------|--------------------|-------------------------------|-----------|----------|
 | **C2** | **API Layer (HTTP Controller)** | Capa de entrada del núcleo SafeNav. Expone los servicios del sistema mediante una API REST para la UI. API actúa como orquestrador del sistema, gestionando la secuencia de llamadas a los servicios backend. | - Recibir solicitudes HTTP desde la UI.<br>- Validar datos y convertirlos en objetos internos (`RouteRequest`, `Preferences`).<br>- Orquestar la ejecución de los módulos internos (`RE`, `CA`, `DM`).<br>- Devolver resultados en formato JSON. | Solicitudes REST desde la UI. | Respuestas JSON con rutas y puntuaciones. |
 | **C3** | **Routing Engine (RE)** | Núcleo de cálculo de rutas. Genera y optimiza rutas posibles utilizando los datos cartográficos y las condiciones actuales. | - Generar rutas candidatas a partir de los datos del mapa.<br>- Calcular ETA, distancia y costo de trayecto.<br>- (Opcionalmente) Solicitar evaluación contextual al `CA` cuando el flujo lo requiera.<br>- Devuelve rutas candidatas o rutas enriquecidas con puntuaciones. | Datos del mapa (desde `DM`).<br>Solicitudes internas (desde `API Layer`). | Rutas optimizadas con puntuaciones. |
-| **C4** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE`. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
-| **C5** | **Data Management (DM)** | Capa de gestión e integración de datos externos. Se encarga de conectar el sistema con las fuentes abiertas (`MapAPI`, `MeteoAPI`, `OpenDataAPI`), procesar los datos y entregarlos en formato interno. | - Obtener y actualizar datos externos.<br>- Preprocesar, normalizar y cachear información.<br>- Proveer datos consistentes a `RE` y `CA`.<br>- Mantener coherencia temporal y semántica de los datos. | Peticiones de datos desde `RE` y `CA`.<br>Datos de servicios externos. | Datos preparados (Grafos de mapas, clima, contexto urbano). |
+| **C4** | **Geospatial Engine (GE)** | Obtiene una representacißon geoespacial del contexto de las rutas candidatas, de modo que puedan ser evaluadas en función de ese contexto. | - Solicitar datos procesados al `DM` (clima, sombra, POIs).<br>- Calcular la representación contextual de las rutas. | Datos contextuales (desde `DM`).<br>Rutas candidatas (desde `RE`). | Representación contextual. |
+| **C5** | **Context Analyzer (CA)** | Evalúa las rutas candidatas con base en datos ambientales y contextuales. Combina información meteorológica y urbana para determinar su confort y seguridad. | - Obtiene representación contextual de `GE`.<br>- Calcular puntuaciones de confort/seguridad por ruta o segmento.<br>- Devolver puntuaciones al `RE`. | Representación contextuales (desde `GE`).<br>Rutas candidatas (desde `RE`). | Puntuaciones de confort y seguridad.<br>Alertas contextuales. |
+| **C6** | **Data Management (DM)** | Capa de gestión e integración de datos externos. Se encarga de conectar el sistema con las fuentes abiertas (`MapAPI`, `MeteoAPI`, `OpenDataAPI`), procesar los datos y entregarlos en formato interno. | - Obtener y actualizar datos externos.<br>- Preprocesar, normalizar y cachear información.<br>- Proveer datos consistentes a `RE` y `CA`.<br>- Mantener coherencia temporal y semántica de los datos. | Peticiones de datos desde `RE` y `CA`.<br>Datos de servicios externos. | Datos preparados (Grafos de mapas, clima, contexto urbano). |
 ---
 
 # 4. Especificación de Interfaces
@@ -232,7 +233,39 @@ Se generan rutas candidatas basadas en datos cartográficos y métricas básicas
 
 ---
 
-## Escenario 3 – Evaluación Contextual de Rutas (Opcional)
+## Escenario 3 - Descripción Contextual de Rutas (Opcional)
+
+### Propósito
+Generar una representación contextual del espacio por el que transcurren las rutas en un momento dado, representando datos meteorológicos y urbanísticos con los que poder evaluar el comfort y seguridad de la ruta más adelante.
+
+### Condición de activación
+Este escenario se activa automáticamente desde la API tras recibir las rutas candidatas.  
+Su ejecución puede depender de la configuración del sistema o de la disponibilidad de datos externos.
+
+### Componentes Involucrados
+
+- API Layer  
+- Geospatial Engine (GE)
+- Data Management (DM)  
+- Meteo Data Source (MeteoAPI)  
+- Open Data Source (OpenDataAPI)
+
+### Descripción del Flujo
+
+1. La API solicita a GE la obtención de la representación de contexto, enviando las rutas para que GE pueda adaptar el contexto a su área.
+2. GE solicita datos climáticos a `Meteo Source`.
+3. GE solicita datos urbanísticos a `Open Data Source`.
+4. GE procesa los datos obtenidos para cada ruta e instante de tiempo, generando una representación en datos estructurados para cada ruta.
+
+
+### Resultado
+
+GE obtiene una representación estructurada de los elementos contextuales en la ruta.
+Si el escenario no se ejecuta, la representación contextual estará vacía y CA no lo tendrá en cuenta.
+
+---
+
+## Escenario 4 – Evaluación Contextual de Rutas (Opcional)
 
 ### Propósito
 
@@ -240,25 +273,20 @@ Evaluar las rutas candidatas utilizando información contextual (meteorológica 
 
 ### Condición de Activación
 
-Este escenario se activa automáticamente desde la API tras recibir las rutas candidatas.  
+Este escenario se activa automáticamente desde la API tras la obtención de la representación contextual de las rutas
 Su ejecución puede depender de la configuración del sistema o de la disponibilidad de datos externos.
 
 ### Componentes Involucrados
 
 - API Layer  
-- Context Analyzer (CA)  
-- Data Management (DM)  
-- Meteo Data Source (MeteoAPI)  
-- Open Data Source (OpenDataAPI)
+- Context Analyzer (CA)
 
 ### Descripción del Flujo
 
-1. La API solicita al Context Analizer la evaluación contextual de las rutas.
-2. El Context Analyzer solicita a Data Management datos meteorológicos y urbanos.
-3. Data Management obtiene los datos desde las fuentes externas correspondientes.
-4. El Context Analyzer calcula puntuaciones de confort y seguridad para cada ruta o segmento.
-5. Las puntuaciones (`RouteScores`) se devuelven a la API.
-6. La API enriquece el `RouteResponse` con los scores.
+1. La API solicita al Context Analizer la evaluación contextual de las rutas. La solicitud incluye las rutas a evaluar y la descripción contextual de cada ruta.
+2. El Context Analyzer calcula puntuaciones de confort y seguridad para cada ruta o segmento --> **Analyze Data and Puntuate route**
+3. Las puntuaciones (`RouteScores`) se devuelven a la API.
+4. La API enriquece el `RouteResponse` con los scores.
 
 ### Resultado
 
@@ -306,3 +334,103 @@ El usuario visualiza las rutas recomendadas superpuestas sobre el mapa, junto co
 | Escenario 2 – Generación de Rutas Candidatas | F1, F2 |
 | Escenario 3 – Evaluación Contextual | F3, F4, F5 |
 | Escenario 4 – Superposición de Rutas | F6, F7 |
+
+---
+
+# 6. Especificación Lógica
+[ ] TODO: En este capítulo se debe explicar la lógica de las funcionalidades implementadas por cada módulo para generar la respuesta. Ahora hay que disenar CA, pero hay que documentar RE y DM
+Los siguientes módulos de SafeNav Core aplican una lógica específica para cubrir las funcionalidades del sistema.
+## Routing Engine
+RE es el encargado de implementar la lógica de enrutamiento, cubriendo así la funcionalidad **F2** - **Cálculo de rutas candidatas**
+[ ] Desarrollar más
+
+## Geospatial Engine
+Módulo encargado de construir una descripción contextual de cada ruta candidata a partir de los datos meteorológicos y urbanos obtenidos mediante `Data Management`.
+
+Cubre las siguientes funcionalidades:
+* **F4** - **Fusión de datos ambientales y urbanos**
+
+El módulo procesa cada RouteCandidate independiéntemente, generando un contexto por candidato.
+
+### Entradas
+RouteCandidates: Respuesta de RE enviada a través de API.
+WeatherData: GE hace uso de la interfaz `I_ContextService` implementada por DM para obtener los datos meteorológicos.
+UrbanData: GE hace uso de la interfaz `I_ContextService` implementada por DM para obtener los datos urbanos.
+
+### Salida
+ContextDescription
+
+### Analyze Data to obtain Context Representation
+Esta función implementa la lógica central del módulo.
+
+[ ] TBC
+
+    FOR EACH RouteCandidate
+
+        1. Sample route geometry
+
+        2. Associate meteorological observations to sampled route points
+
+        3. Select urban elements relevant to the route according to spatial criteria
+
+            - shadow zone intersections
+            - nearby water points
+            - nearby police offices
+            - nearby parks
+            - nearby benches
+
+        4. Build WeatherContext
+
+        5. Build UrbanContext
+
+        6. Build RouteContext
+
+    Aggregate all RouteContext objects into a ContextDescription response
+
+## Data Management
+DM implementa las interfaces externas con servicios de datos abiertos. Estas interfaces son usadas por los distintos servicios SafeNav core para:
+* Obtener grafos para calcular rutas entre dos puntos
+* Obtener datos climáticos para analizar la seguridad y comfort de las rutas
+* Obtener datos de vías públicas para analizar la seguridad y comfort de las rutas.
+DM es una capa gateway que adapta datos de entrada al modelo de datos SafeNav, actúa como interfaz entre los módulos core y datos externos:
+---
+    API
+    ↓
+    RE
+    ↓
+    DM
+---
+    API
+    ↓
+    GE
+    ↓
+    DM
+
+### Get graph data
+[ ] Explicar la lógica implementada
+Implementa la interfaz I_RoadGraphAccess.
+
+### Get open data
+Implementa la interfaz I_OpenDataAccess para obtener datos metereológicos y de vías públicas.
+#### Fetch Weather Data
+Obtiene los datos meteorológicos de interés de una plataforma de datos abiertos.
+SafeNav v1.0 hace uso de Open-Meteo [ ] referencia.
+
+#### Aggregate Weather Data
+Convierte los datos meteorológicos obtenidos en un modelo de impacto meteorológico en la ruta.
+Este módulo debe ser:
+* stateless
+* cacheable
+* determinista
+* independiente del routing
+* optimizado para múltiples rutas en una sola request
+
+La entrada del módulo es una región Area, solicitada por CA en I_OpenDataAccess.
+
+#### Fetch Urban Data
+
+## Context Analyzer
+CA es el encargado de aplicar la lógica de evaluación de rutas y selección de la mejor. Cubre las siguientes funcionalidades:
+* **F3** - **Evaluación contextual de rutas** 
+* **F5** - **Asignación de puntuaciones de seguridad y confort**
+* **F6** - **Priorización y recomendación de rutas**

@@ -1,0 +1,18 @@
+@startuml
+note across
+Scenario 4 – Route Evaluation
+"This sequence diagram illustrates the internal route evaluation ofroute
+candidates performed by SafeNav. This scenario is automatically triggered by
+the API Layer after a context representation is generated for each route candidate."
+end note
+
+participant "API Layer" as API
+participant "Context Analyzer" as CA
+
+API -> CA : I_ContextService: evaluate routes\n(RouteCandidates, ContextDescription)
+
+CA --> CA : **Analyze Routes with its context to obtain a score**
+
+CA --> API : I_ContextService: routes scores
+
+@enduml

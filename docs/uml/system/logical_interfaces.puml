@@ -1,3 +1,5 @@
+[ ] ANALIZAR UN CAMBIO ARQUITECTÓNICO IMPORTANTE >> API pasa a orquestrar. De modo que API pide datos a DM y los envía a los módulos.
+[ ] API también puede gestionar DBs, de modo de DM ingresa datos en DBs, los módulos consultarían
 @startuml
 !include docs/uml/theme.puml
 skinparam linetype ortho
@@ -34,9 +36,15 @@ package "SafeNav internal interfaces" as Internal {
     API --> IRoute
     IRoute -- RE : implements
 
+    component "Geospatial Engine\(GE)" as GE
+    interface "I_GeospatialService" as IGeo
+    IGeo : + getRoutesContext(routes: RouteCandidates) : routes_context
+    API -down-> IGeo : uses
+    IGeo -down-> GE : implements
+
     component "Context Analyzer\n(CA)" as CA
     interface "I_ContextService" as IContext
-    IContext : + evaluateRoutes(routes : RouteCandidates) : RouteScores
+    IContext : + evaluateRoutes(routes : RouteCandidates\n, routes_context : ContextDescription) :\n RouteScores
     API -right-> IContext : uses
     IContext -down- CA : implements
 
@@ -44,11 +52,11 @@ package "SafeNav internal interfaces" as Internal {
     interface "I_RoadGraphAccess" as IGraph
     IGraph : + getGraphData(area : Area) : GraphData
     interface "I_ContextDataAccess" as IData
-    IData : + getWeatherData(time : DateTime) : WeatherData
+    IData : + getWeatherData(weather_request : WeatherRequest) : WeatherData
     IData : + getUrbanData(area : Area) : UrbanData
 
     RE --> IGraph : uses
-    CA --> IData : uses
+    GE --> IData : uses
 
     IGraph -- DM : implements
     

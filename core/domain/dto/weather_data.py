@@ -9,6 +9,9 @@ to evaluate comfort and safety levels for pedestrian routes.
 from pydantic import BaseModel, Field
 from typing import Optional
 
+class WeatherRequest(BaseModel):
+    routes: List[Path]
+    resolution: float = 100.0  # metros entre samples
 
 class WeatherData(BaseModel):
     """Represents processed weather information relevant for route evaluation."""

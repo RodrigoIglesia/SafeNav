@@ -21,27 +21,26 @@ component "User Interface System" <<system>> as UISys {
 component "SafeNav Core" <<system>> as Core {
   component "API Layer (HTTP Controller)" as API
   component "Routing Engine\n(RE)" as RE
+  component "Geospatial Engine (GE)" as GE
   component "Context Analyzer\n(CA)" as CA
   component "                                Data Management (DM)                               " as DM
 
   ' === Internal Interfaces ===
-  API -down-> RE :    Route request
-  RE .up.> API :      Route results
-  API -down-> CA :    Route candidates
-  API -down-> DM :    Map view request
-  DM .up.> API :      Map view response
-  CA .up.> API :      Route + scores
-  CA -down-> DM :     Context data request
-  DM .up.> CA :       Context data response
+  API -left-> RE :    Route request
+  RE .right.> API :      Route results
+  API -down-> GE :    Route candidates
+  GE .up.> API :      Geospatial context data
+  GE -down-> DM :     Context data request
+  DM .up.> GE :       Context data response
+  API -right-> CA :    Route candidates + context data
+  CA .left.> API :      Route + scores
   RE -down-> DM :     Graph data request
   DM .up.> RE :       Graph data response
 }
 
 ' === Connection between UI and Core ===
-UI --> API : HTTP request\n(Map view request)
-API ..> UI : HTTP response\n(Map view)
-UI --> API : HTTP request\n(Route request)
-API ..> UI : HTTP response\n(Route results and alerts)
+UI -down-> API : HTTP request\n(Route request)
+API .up.> UI : HTTP response\n(Route results and scores)
 
 ' === External Data Sources (vertical layout) ===
 package "External Data Sources" {
