@@ -1,4 +1,5 @@
 """
+service.py
 SafeNav Core - API Layer Service
 --------------------------------
 Initializes the FastAPI service and registers HTTP controllers
@@ -14,11 +15,11 @@ from api.controllers.route_controller import router as route_router
 
 # Services
 from routing_engine.service import RoutingEngine
-from geospatial_engine.service import GeoEngine
+from geospatial_engine.service import GeospatialEngine
 from context_analyzer.service import ContextAnalyzer
 from data_management.service import DataManagement
 from interfaces.i_routing_service import IRoutingService
-from interfaces.i_geospatial_service import IGeoService
+from interfaces.i_geospatial_service import IGeospatialService
 from interfaces.i_context_service import IContextService
 
 def create_api_service() -> FastAPI:
@@ -56,7 +57,7 @@ def create_api_service() -> FastAPI:
 
     # Call services interfaces
     routing_service: IRoutingService = RoutingEngine(data_management)
-    geospatial_service: IGeoService = GeoEngine(data_management)
+    geospatial_service: IGeospatialService = GeospatialEngine(data_management)
     context_service: IContextService = ContextAnalyzer()
 
     # Register services in application state

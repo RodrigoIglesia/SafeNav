@@ -1,5 +1,4 @@
 @startuml
-[ ] Actualizar DTOS con las interfaces actuales
 !include docs/uml/theme.puml
 skinparam shadowing false
 skinparam defaultTextAlignment center
@@ -11,18 +10,20 @@ skinparam Linetype ortho
 allowmixing
 
 top to bottom direction
+
+
 ' ==================================
-' INTERNAL DATA TRANSFER OBJECTS
+' ROUTING DTOs
 ' ==================================
+
 class RouteRequest {
 + origin: GeoPoint
 + destination: GeoPoint
 + preferences: RoutePreferences
 }
 
-class RouteResponse {
-+ routes: [RouteCandidate]
-+ metadata: ResponseMetadata
+class RouteCandidates {
++ items: [RouteCandidate]
 }
 
 class RouteCandidate {
@@ -32,20 +33,54 @@ class RouteCandidate {
 + distance: Number
 }
 
-class RouteCandidates {
-+ items: [RouteCandidate]
+class RouteResponse {
++ routes: RouteCandidates
++ scores: RouteScores [0..1]
++ metadata: ResponseMetadata
 }
 
-class RouteScores {
-+ comfort_score: Float
-+ safety_score: Float
-+ segment_scores: [SegmentScore]
+class RoutePreferences {
++ minimize_sun: Boolean
++ avoid_hazard_zones: Boolean
++ prioritize_speed: Boolean
++ comfort_weight: Float
 }
 
-class MapData {
-+ tiles: [Tile]
-+ metadata: MapMetadata
+
+' ==================================
+' ROUTING GRAPH DTOs
+' ==================================
+
+class GraphData {
++ nodes: [GeoPoint]
++ edges: [Edge]
 }
+
+class Edge {
++ start: GeoPoint
++ end: GeoPoint
++ weight: Float
+}
+
+
+' ==================================
+' CONTEXT REQUEST DTOs
+' ==================================
+
+class WeatherRequest {
++ area: Area
++ time: DateTime
+}
+
+class UrbanDataRequest {
++ area: Area
++ data_type: String
+}
+
+
+' ==================================
+' CONTEXT DATA DTOs
+' ==================================
 
 class WeatherData {
 + temperature: Float
@@ -59,23 +94,25 @@ class UrbanData {
 + POIs: [POI]
 }
 
-
-class GeoPoint {
-+ lat: Float
-+ lon: Float
+class ContextDescription {
++ weather: WeatherData
++ urban: UrbanData
 }
 
-class RoutePreferences {
-+ minimize_sun: Boolean
-+ avoid_hazard_zones: Boolean
-+ prioritize_speed: Boolean
-+ comfort_weight: Float
+
+' ==================================
+' CONTEXT EVALUATION DTOs
+' ==================================
+
+class RouteScores {
++ items: [RouteScore]
 }
 
-class ResponseMetadata {
-+ timestamp: DateTime
-+ request_id: String
-+ source: String
+class RouteScore {
++ route_id: String
++ comfort_score: Float
++ safety_score: Float
++ segment_scores: [SegmentScore]
 }
 
 class SegmentScore {
@@ -84,31 +121,14 @@ class SegmentScore {
 + safety: Float
 }
 
-class Area {
-+ center: GeoPoint
-+ radius_m: Float
-}
 
-class Polyline {
-+ coordinates: [GeoPoint]
-}
+' ==================================
+' MAP VISUALIZATION DTOs
+' ==================================
 
-class POI {
-+ id: String
-+ name: String
-+ type: String
-+ location: GeoPoint
-}
-
-class Graph {
-+ nodes: [GeoPoint]
-+ edges: [Edge]
-}
-
-class Edge {
-+ start: GeoPoint
-+ end: GeoPoint
-+ weight: Float
+class MapData {
++ tiles: [Tile]
++ metadata: MapMetadata
 }
 
 class Tile {
@@ -122,40 +142,94 @@ class MapMetadata {
 + zoom_level: Int
 }
 
+
+' ==================================
+' COMMON DTOs
+' ==================================
+
+class GeoPoint {
++ lat: Float
++ lon: Float
+}
+
+class Area {
++ center: GeoPoint
++ radius_m: Float
+}
+
+class Polyline {
++ coordinates: [GeoPoint]
+}
+
 class Polygon {
 + coordinates: [GeoPoint]
 }
 
+class POI {
++ id: String
++ name: String
++ type: String
++ location: GeoPoint
+}
+
+class ResponseMetadata {
++ timestamp: DateTime
++ request_id: String
++ source: String
+}
+
 
 ' ==================================
-' RELATIONSHIPS (Composition)
+' RELATIONSHIPS
 ' ==================================
 
-' Route relationships
+' --- Routing ---
 RouteRequest *-- GeoPoint : origin/destination
 RouteRequest *-- RoutePreferences
+
 RouteResponse *-- RouteCandidates
+RouteResponse *-- RouteScores
 RouteResponse *-- ResponseMetadata
+
 RouteCandidates *-- RouteCandidate
 RouteCandidate *-- Polyline
-RouteScores *-- SegmentScore
 
-' Map / Urban / Weather
-MapData *-- Graph
-MapData *-- Tile
-MapData *-- MapMetadata
-UrbanData *-- Polygon
-UrbanData *-- GeoPoint
+
+' --- Road graph ---
+GraphData *-- GeoPoint
+GraphData *-- Edge
+Edge *-- GeoPoint : start/end
+
+
+' --- Context requests ---
+WeatherRequest *-- Area
+UrbanDataRequest *-- Area
+
+
+' --- Context description ---
+ContextDescription *-- WeatherData
+ContextDescription *-- UrbanData
+
+UrbanData *-- Polygon : shadow zones
+UrbanData *-- GeoPoint : water points
 UrbanData *-- POI
 
-' Supporting type relationships
+
+' --- Evaluation ---
+RouteScores *-- RouteScore
+RouteScore *-- SegmentScore
+
+
+' --- Map visualization ---
+MapData *-- Tile
+MapData *-- MapMetadata
+Tile *-- Polygon
+
+
+' --- Common geometry ---
 Polyline *-- GeoPoint
 Polygon *-- GeoPoint
 POI *-- GeoPoint
-Graph *-- GeoPoint
-Graph *-- Edge
-Edge *-- GeoPoint
-Tile *-- Polygon
 Area *-- GeoPoint
 
 

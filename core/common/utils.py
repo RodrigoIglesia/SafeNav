@@ -21,16 +21,37 @@ def haversine_distance_m(p1: Point, p2: Point) -> float:
         return R * c
 
 
-def build_area_from_points(origin: Point, destination: Point) -> Area:
-        # Compute the center as the midpoint
-        center_lat = (origin.lat + destination.lat) / 2
-        center_lon = (origin.lon + destination.lon) / 2
-        center = Point(lat=center_lat, lon=center_lon)
+def build_area_from_points(points: List[Point]) -> Area:
+    """
+    Builds a circular area covering a set of geospatial points.
 
-        # Compute radius as half the distance between points
-        radius_m = haversine_distance_m(origin, destination) / 2
+    Strategy:
+    - Compute centroid of all points
+    - Compute maximum distance from centroid
+    - Use that as radius
+    """
 
-        return Area(center=center, radius_m=radius_m)
+    if not points:
+        raise ValueError("Cannot build Area from empty point list")
+
+    # 1. Centroid
+    center_lat = sum(p.lat for p in points) / len(points)
+    center_lon = sum(p.lon for p in points) / len(points)
+    center = Point(lat=center_lat, lon=center_lon)
+
+    # 2. Max distance to centroid
+    radius_m = max(
+        haversine_distance_m(center, p)
+        for p in points
+    )
+
+    # Optional safety margin (important for routing)
+    radius_m *= 1.1  # +10% buffer
+
+    return Area(
+        center=center,
+        radius_m=radius_m
+    )
 
 
 def search_nearest_point(nodes: List[GeoPoint], point: Point) -> GeoPoint:
@@ -84,7 +105,7 @@ def convert_networkx_to_graphdata(G) -> GraphData:
         edges.append(edge)
 
         # ---- adjacency build (IMPORTANT) ----
-        adjacency.setdefault(u, []).append(edge)
+        adjacency.setdefault(str(u), []).append(edge)
 
     # -------------------------
     # return full graph

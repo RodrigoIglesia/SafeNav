@@ -6,3 +6,4 @@ osmnx==1.9.3
 networkx==3.2.1
 matplotlib==3.8.4
 folium==0.16.0 # Only for visualization debug
+httpx

@@ -1,22 +1,31 @@
-# core/interfaces/i_context_service.py
 from typing import Protocol
-from domain.dto.routes import RouteCandidates, RouteScores
+
 from domain.dto.geospatial import ContextDescription
+from domain.dto.routes import RouteCandidates, RouteScores
 
 
 class IContextService(Protocol):
     """
-    Interface for contextual route analysis (CA).
-    Implemented by ContextAnalyzer to evaluate comfort and safety of routes.
+    Provides contextual evaluation of route candidates.
+
+    Implemented by Context Analyzer (CA).
     """
 
-    def evaluate_routes(self, routes: RouteCandidates, routes_context: ContextDescription) -> RouteScores:
+    def evaluate_routes(
+        self,
+        routes: RouteCandidates,
+        context: ContextDescription,
+    ) -> RouteScores:
         """
-        Evaluates multiple route candidates using contextual data
-        (e.g., weather, shadow zones, urban features).
+        Evaluate route candidates using their contextual description.
 
-        - routes: Set of candidate routes to evaluate
-        - routes_context: ContextDescription of each route candidate (weather and urban data)
-        - returns: RouteScores with comfort/safety values
+        Args:
+            routes:
+                Route candidates to evaluate.
+            context:
+                Weather and urban context associated with the routes.
+
+        Returns:
+            Comfort and safety scores for the evaluated routes.
         """
         ...

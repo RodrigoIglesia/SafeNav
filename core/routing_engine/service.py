@@ -5,9 +5,9 @@ Routing Engine
 Implements the IRoutingService interface.
 """
 
-from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates, RouteScores, RouteScore
+from domain.dto.routes import RouteRequest, RouteCandidate, RouteCandidates
 from interfaces.i_routing_service import IRoutingService
-from interfaces.i_road_graph_access import I_RoadGraphAccess
+from interfaces.i_road_graph_access import IRoadGraphAccess
 
 from routing_engine.modules.router import Router
 
@@ -22,7 +22,7 @@ class RoutingEngine(IRoutingService):
     Implements IRoutingService.
     """
     
-    def __init__(self, road_graph_access: I_RoadGraphAccess):
+    def __init__(self, road_graph_access: IRoadGraphAccess):
         self.road_graph_access = road_graph_access
 
     def calculate_routes(self, request: RouteRequest) -> RouteCandidates:
@@ -34,7 +34,7 @@ class RoutingEngine(IRoutingService):
         print(f"RE: Calculating routes from {request.origin} to {request.destination} with preferences {request.preferences}")
 
         # Calculate Area to request the Graph to calculate routes
-        area = build_area_from_points(request.origin, request.destination)
+        area = build_area_from_points([request.origin, request.destination])
         # TODO: We need to pass the area because downloading the entire city graph is too heavy. Do we need city in the interface?
         graph = self.road_graph_access.get_graph_data(area)
         print(f"RE: Retrieved graph with {len(graph.nodes)} nodes and {len(graph.edges)} edges")
@@ -111,26 +111,4 @@ class RoutingEngine(IRoutingService):
         return RouteCandidates(
             request_id=str(uuid4()),
             items=candidates
-        )
-
-    def get_route_scores(self, candidates: RouteCandidates) -> RouteScores:
-        """
-        Retrieve evaluated scores for a previously generated route request.
-        """
-        # Call context analyzer
-
-        # TODO: Mock score
-        scores = []
-        for candidate in candidates.items:
-            scores.append(
-                RouteScore(
-                    id=candidate.id,
-                    comfort_score=0.75,
-                    safety_score=0.85,
-                    segment_scores=None,
-                )
-            )
-
-        return RouteScores(
-            scores=scores
         )

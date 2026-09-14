@@ -114,8 +114,7 @@ export default function FloatingRoutePanel({
         destination: {
           lat: finalDestination[0],
           lon: finalDestination[1]
-        },
-        preferences: null
+        }
       };
 
       const routeResponse = await requestRoute(routeRequest);
