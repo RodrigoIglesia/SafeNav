@@ -1,13 +1,19 @@
 @startuml
+
 note across
+
 Scenario 3 – Contextual Route Description
+
 "This sequence diagram illustrates the generation of a contextual
 description for previously generated route candidates.
 
 The API Layer requests the Geospatial Engine to derive the relevant
-context. The Geospatial Engine determines the contextual data required
-for the route candidates and obtains it through Data Management."
+context. The Geospatial Engine determines a shared contextual area
+covering the route candidates, obtains the required contextual data
+through Data Management, and correlates that data with each route."
+
 end note
+
 
 participant "API Layer" as API
 participant "Geospatial Engine" as GE
@@ -15,23 +21,29 @@ participant "Data Management" as DM
 participant "Meteo Data Source" as Meteo
 participant "Open Data Source" as OpenData
 
+
 API -> GE : I_GeospatialService:\ngetRoutesContext(routes : RouteCandidates)
 
-GE -> GE : derive WeatherRequest\nfrom route candidates
+GE -> GE : Analyze route candidate geometries
+GE -> GE : Build shared context area
 
+GE -> GE : Derive WeatherDataRequest\nfrom shared context area
 GE -> DM : I_ContextDataAccess:\ngetWeatherData(weatherRequest)
+
 DM -> Meteo : I_MeteoDataAccess:\nfetchWeatherData(area, time)
 Meteo --> DM : WeatherData
 DM --> GE : WeatherData
 
-GE -> GE : derive UrbanDataRequest\nfrom route candidates
-
+GE -> GE : Derive UrbanDataRequest\nfrom shared context area
 GE -> DM : I_ContextDataAccess:\ngetUrbanData(urbanDataRequest)
+
 DM -> OpenData : I_OpenDataAccess:\nfetchUrbanData(area, dataType)
 OpenData --> DM : UrbanData
 DM --> GE : UrbanData
 
-GE -> GE : analyze contextual data\nand build ContextDescription
+GE -> GE : Correlate contextual data\nwith each route candidate
+GE -> GE : Build RouteContext\nfor each route
+GE -> GE : Build ContextDescription
 
 GE --> API : I_GeospatialService:\nContextDescription
 

@@ -5,154 +5,221 @@ Geospatial Engine
 Implements the IGeospatialService interface.
 """
 
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone, timedelta
+
 from domain.dto.common import Point, Area
 from domain.dto.routes import RouteCandidates, RouteCandidate
-from domain.dto.geospatial import \
-    WeatherDataRequest,\
-    WeatherContext, UrbanDataRequest, WeatherData, UrbanData, UrbanContext,\
-    ContextDescription, RouteContext
+from domain.dto.geospatial import (
+    WeatherDataRequest,
+    WeatherContext,
+    UrbanDataRequest,
+    WeatherData,
+    UrbanData,
+    UrbanContext,
+    ContextDescription,
+    RouteContext,
+)
 from interfaces.i_geospatial_service import IGeospatialService
 from interfaces.i_context_data_access import IContextDataAccess
 
 from common.utils import haversine_distance_m, build_area_from_points
 
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone, timedelta
-
 
 class GeospatialEngine(IGeospatialService):
     """
     Implements IGeospatialService.
+
     Responsible for:
-    - Route sampling
-    - Building spatial queries
-    - Calling Data Management (DM)
-    - Transforming raw data into RouteContext
+    - Analyzing route candidate geometries.
+    - Building a shared contextual acquisition area.
+    - Requesting contextual data through Data Management.
+    - Correlating contextual data with each route candidate.
+    - Building the ContextDescription.
     """
 
     def __init__(self, context_data_access: IContextDataAccess):
-        self.context_data_access =  context_data_access
+        self.context_data_access = context_data_access
 
+    def get_routes_context(
+        self,
+        candidates: RouteCandidates
+    ) -> ContextDescription:
+        """
+        Build contextual descriptions for a set of route candidates.
 
-    def get_routes_context(self, candidates: RouteCandidates) -> ContextDescription:
+        Contextual data is retrieved once for a shared area covering
+        all route candidates. The retrieved data is then correlated
+        individually with each route.
+        """
 
-        contexts = []
+        if not candidates.items:
+            return ContextDescription(items=[])
 
-        for route in candidates.items:
+        # 1. Analyze route candidates and build shared context area.
+        context_area = self._build_candidates_context_area(candidates)
 
-            # Build spatial query (shared geometry)
-            area = self._build_context_area(route)
-            print(f"GE: Covered area: {area}")
+        print(f"GE: Shared covered area: {context_area}")
 
-            # Build DM requests for IContextDataAccess
-            # TODO: Config parameters should come from the API request and be selected in the UI configuration (backoffice)
-            weather_request = WeatherDataRequest(
-                covered_area=area,
-                start_time=None,
-                end_time=None,
-                time_step_minutes=60
+        # 2. Derive contextual data requests.
+        #
+        # TODO:
+        # Configuration parameters should come from application/backoffice
+        # configuration and, where appropriate, from the route request.
+        weather_request = WeatherDataRequest(
+            covered_area=context_area,
+            start_time=None,
+            end_time=None,
+            time_step_minutes=60,
+        )
+
+        urban_request = UrbanDataRequest(
+            covered_area=context_area,
+            include_shadow_zones=True,
+            include_water_points=True,
+            include_police_offices=True,
+            include_parks=True,
+            include_benches=True,
+            max_distance_m=100,
+        )
+
+        # 3. Retrieve shared contextual data through Data Management.
+        # Weather and urban data are independent and can be fetched in parallel.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            weather_future = executor.submit(
+                self.context_data_access.get_weather_data,
+                weather_request,
             )
-            urban_request = UrbanDataRequest(
-                covered_area=area,
 
-                include_shadow_zones=True,
-                include_water_points=True,
-                include_police_offices=True,
-                include_parks=True,
-                include_benches=True,
-
-                # buffer around route influence area
-                max_distance_m=100
+            urban_future = executor.submit(
+                self.context_data_access.get_urban_data,
+                urban_request,
             )
 
-            # IContextDataAccess -> Fetch raw data from DM (parallelized)
-            # TODO:
-            # Optimize contextual data retrieval across route candidates.
-            # Candidate routes may overlap significantly, so weather/urban
-            # data could potentially be requested once for their combined area.
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                weather_future = executor.submit(
-                    self.context_data_access.get_weather_data,
-                    weather_request
-                )
+            weather_data = weather_future.result()
+            urban_data = urban_future.result()
 
-                urban_future = executor.submit(
-                    self.context_data_access.get_urban_data,
-                    urban_request
-                )
-
-                weather_data = weather_future.result()
-                urban_data = urban_future.result()
-
-            # Build route context
-            route_context = self._build_route_context(
+        # 4. Correlate the shared contextual data with each route.
+        contexts = [
+            self._build_route_context(
                 route,
                 weather_data,
-                urban_data
+                urban_data,
             )
+            for route in candidates.items
+        ]
 
-            contexts.append(route_context)
-
+        # 5. Build the final contextual description.
         return ContextDescription(items=contexts)
 
     # ----------------------------
-    # QUERY BUILDING
+    # CONTEXT AREA BUILDING
     # ----------------------------
-    def _build_context_area(self, route: RouteCandidate) -> Area:
-        """
-        Builds a spatial query from a route.
 
-        Selects route points at approximately `sample_distance_m`
-        intervals along the route and derives a covered area from them.
+    def _build_candidates_context_area(self, candidates: RouteCandidates) -> Area:
+        """
+        Build a shared contextual area covering all route candidates.
+
+        Route geometries are sampled to reduce the number of points used
+        when calculating the shared area.
+
+        TODO:
+        Replace the circular area with a buffered route corridor / union
+        when more precise spatial queries are required.
+        """
+
+        context_points: list[Point] = []
+
+        for route in candidates.items:
+            sampled_points = self._sample_route_points(route)
+
+            context_points.extend(
+                Point(lat=point.lat, lon=point.lon)
+                for point in sampled_points
+            )
+
+        if not context_points:
+            raise ValueError(
+                "Cannot build context area from empty route geometries."
+            )
+
+        return build_area_from_points(context_points)
+
+    def _sample_route_points(self, route: RouteCandidate) -> list[Point]:
+        """
+        Sample route geometry at approximately fixed distance intervals.
+
+        The first and last route points are always included.
         """
 
         coordinates = route.geometry.coordinates
 
         if not coordinates:
-            raise ValueError("Route geometry contains no coordinates.")
+            raise ValueError(
+                f"Route {route.id} geometry contains no coordinates."
+            )
 
-        sample_distance_m = 100.0  # TODO: configurable
+        sample_distance_m = 100.0  # TODO: Move to configuration.
 
         sampled_points = [coordinates[0]]
-
         accumulated_distance = 0.0
 
-        for previous, current in zip(coordinates[:-1], coordinates[1:]):
+        for previous, current in zip(
+            coordinates[:-1],
+            coordinates[1:]
+        ):
+            segment_length = haversine_distance_m(
+                previous,
+                current
+            )
 
-            segment_length = haversine_distance_m(previous, current)
             accumulated_distance += segment_length
 
             if accumulated_distance >= sample_distance_m:
                 sampled_points.append(current)
                 accumulated_distance = 0.0
 
-        # Ensure destination is always included
+        # Ensure destination is always included.
         if sampled_points[-1] != coordinates[-1]:
             sampled_points.append(coordinates[-1])
 
-
-        return build_area_from_points(sampled_points)
-
+        return sampled_points
 
     # ----------------------------
-    # CONTEXT BUILDING
+    # ROUTE CONTEXT BUILDING
     # ----------------------------
-    def _build_route_context(self, route: RouteCandidate, weather_data: WeatherData, urban_data: UrbanData) -> RouteContext:
+
+    def _build_route_context(
+        self,
+        route: RouteCandidate,
+        weather_data: WeatherData,
+        urban_data: UrbanData,
+    ) -> RouteContext:
         """
-        Transform raw DM data into route-aware context.
+        Correlate shared contextual data with a specific route.
         """
 
-        weather_context = self._build_weather_context(route, weather_data)
-        urban_context = self._build_urban_context(route, urban_data)
+        weather_context = self._build_weather_context(
+            route,
+            weather_data,
+        )
+
+        urban_context = self._build_urban_context(
+            route,
+            urban_data,
+        )
 
         return RouteContext(
             route_id=route.id,
             weather=weather_context,
-            urban=urban_context
+            urban=urban_context,
         )
 
-
-    def _build_weather_context(self, route: RouteCandidate, weather_data: WeatherData) -> WeatherContext:
+    def _build_weather_context(
+        self,
+        route: RouteCandidate,
+        weather_data: WeatherData,
+    ) -> WeatherContext:
         """
         Associate weather observations relevant to the route.
 
@@ -173,7 +240,7 @@ class GeospatialEngine(IGeospatialService):
 
         start_time = datetime.now(timezone.utc)
 
-        # Assuming route.eta represents travel duration in seconds.
+        # route.eta currently represents travel duration in seconds.
         end_time = start_time + timedelta(seconds=route.eta)
 
         relevant_observations = []
@@ -181,7 +248,8 @@ class GeospatialEngine(IGeospatialService):
         for observation in weather_data.weather_points:
             timestamp = observation.timestamp
 
-            # Normalize naive timestamps if necessary.
+            # TODO:
+            # Prefer normalizing timestamps at the DM/provider boundary.
             if timestamp.tzinfo is None:
                 timestamp = timestamp.replace(tzinfo=timezone.utc)
 
@@ -193,10 +261,14 @@ class GeospatialEngine(IGeospatialService):
             alert_level=None,
         )
 
-    def _build_urban_context(self, route: RouteCandidate, urban_data: UrbanData) -> UrbanContext:
+    def _build_urban_context(
+        self,
+        route: RouteCandidate,
+        urban_data: UrbanData,
+    ) -> UrbanContext:
         """
-        Associate urban features relevant to the route based on
-        proximity and/or spatial intersection.
+        Associate urban features with a route according to their
+        spatial relationship with the route geometry.
 
         TODO:
         - Calculate point-to-segment distance instead of point-to-vertex.
@@ -204,7 +276,9 @@ class GeospatialEngine(IGeospatialService):
         - Implement shadow-zone correlation.
         """
 
-        max_distance_m = 100.0  # TODO: Move to configuration.
+        # Route relevance threshold.
+        # TODO: Move to GE/application configuration.
+        max_distance_m = 100.0
 
         water_points = [
             water_point
@@ -245,19 +319,30 @@ class GeospatialEngine(IGeospatialService):
             shadow_zones=[],
         )
 
-    def _distance_to_route_m(self, point: Point, route: RouteCandidate)-> float:
+    # ----------------------------
+    # SPATIAL CORRELATION
+    # ----------------------------
+
+    def _distance_to_route_m(
+        self,
+        point: Point,
+        route: RouteCandidate,
+    ) -> float:
         """
-        Returns the approximate minimum distance between a point and
-        the route using the route geometry vertices.
+        Return the approximate minimum distance between a point and
+        the route using route geometry vertices.
 
         TODO:
-        Calculate distance to route segments instead of only vertices.
+        Calculate point-to-segment distance instead of only
+        point-to-vertex distance.
         """
 
         coordinates = route.geometry.coordinates
 
         if not coordinates:
-            raise ValueError("Route geometry contains no coordinates.")
+            raise ValueError(
+                f"Route {route.id} geometry contains no coordinates."
+            )
 
         return min(
             haversine_distance_m(point, route_point)

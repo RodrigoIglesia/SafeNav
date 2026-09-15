@@ -136,7 +136,7 @@ class WaterPoint(BaseModel):
 
     id: str
     location: Point
-    potable: bool
+    potable: Optional[bool] = None
 
 
 class PoliceOffice(BaseModel):
@@ -144,8 +144,8 @@ class PoliceOffice(BaseModel):
 
     id: str
     location: Point
-    open_now: bool
-    is_24h: bool
+    open_now: Optional[bool] = None
+    is_24h: Optional[bool] = None
 
 
 class Park(BaseModel):
@@ -153,7 +153,7 @@ class Park(BaseModel):
 
     id: str
     geometry: Polygon
-    area_m2: float = Field(..., ge=0)
+    area_m2: Optional[float] = Field(None, ge=0)
 
 
 class Bench(BaseModel):
@@ -161,7 +161,7 @@ class Bench(BaseModel):
 
     id: str
     location: Point
-    covered: bool
+    covered: Optional[bool] = None
 
 
 class UrbanData(BaseModel):

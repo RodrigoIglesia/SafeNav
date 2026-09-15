@@ -58,7 +58,7 @@ from common.utils import haversine_distance_m, convert_networkx_to_graphdata
 import osmnx as ox
 from osmnx._errors import GraphSimplificationError
 import httpx
-from datetime import datetime
+from datetime import datetime, time
 
 from pathlib import Path
 import hashlib
@@ -199,21 +199,64 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
         OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
         query = self._build_overpass_query(request)
+        print("DM: Overpass query: ", query)
 
-        response = httpx.post(
-            OVERPASS_URL,
-            data={"data": query},
-            timeout=30.0,
-        )
+        headers = {
+            "User-Agent": "SafeNav/0.1",
+            "Accept": "application/json",
+        }
 
-        response.raise_for_status()
+        max_attempts = 3
 
-        return response.json()
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = httpx.post(
+                    OVERPASS_URL,
+                    data={"data": query},
+                    headers=headers,
+                    timeout=30.0,
+                )
 
-    def _build_overpass_query(
-        self,
-        request: UrbanDataRequest,
-    ) -> str:
+                response.raise_for_status()
+
+                return response.json()
+
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+
+                # Retry only transient server-side failures.
+                if status_code in {502, 503, 504} and attempt < max_attempts:
+                    wait_seconds = 2 ** (attempt - 1)
+
+                    print(
+                        f"DM: Overpass returned {status_code}. "
+                        f"Retrying in {wait_seconds}s "
+                        f"({attempt}/{max_attempts})"
+                    )
+
+                    time.sleep(wait_seconds)
+                    continue
+
+                raise
+
+            except httpx.TimeoutException:
+                if attempt < max_attempts:
+                    wait_seconds = 2 ** (attempt - 1)
+
+                    print(
+                        f"DM: Overpass timeout. "
+                        f"Retrying in {wait_seconds}s "
+                        f"({attempt}/{max_attempts})"
+                    )
+
+                    time.sleep(wait_seconds)
+                    continue
+
+                raise
+
+        raise RuntimeError("Unexpected Overpass retry state")
+
+    def _build_overpass_query(self, request: UrbanDataRequest) -> str:
 
         center = request.covered_area.center
         radius = request.covered_area.radius_m
@@ -256,7 +299,10 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
 
     def _convert_urban_data(self, raw_data, request: UrbanDataRequest) -> UrbanData:
         """
-        Converts an Overpass API response into the SafeNav UrbanData model.
+        Convert an Overpass API response into the SafeNav UrbanData model.
+
+        Provider-specific OSM data is normalized here so that the
+        Geospatial Engine only receives SafeNav domain DTOs.
         """
 
         water_points = []
@@ -267,6 +313,8 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
         for element in raw_data.get("elements", []):
             tags = element.get("tags", {})
 
+            element_id = str(element["id"])
+
             # ------------------------------------------------------
             # Drinking water
             # ------------------------------------------------------
@@ -274,8 +322,21 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
                 location = self._extract_osm_location(element)
 
                 if location is not None:
+                    # amenity=drinking_water already identifies the feature
+                    # as intended for drinking.
+                    potable = self._parse_osm_bool(
+                        tags.get("drinking_water")
+                    )
+
+                    if potable is None:
+                        potable = True
+
                     water_points.append(
-                        WaterPoint(location=location)
+                        WaterPoint(
+                            id=element_id,
+                            location=location,
+                            potable=potable,
+                        )
                     )
 
             # ------------------------------------------------------
@@ -286,7 +347,13 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
 
                 if location is not None:
                     benches.append(
-                        Bench(location=location)
+                        Bench(
+                            id=element_id,
+                            location=location,
+                            covered=self._parse_osm_bool(
+                                tags.get("covered")
+                            ),
+                        )
                     )
 
             # ------------------------------------------------------
@@ -297,7 +364,18 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
 
                 if location is not None:
                     police_offices.append(
-                        PoliceOffice(location=location)
+                        PoliceOffice(
+                            id=element_id,
+                            location=location,
+
+                            # TODO:
+                            # Derive from opening_hours when implemented.
+                            open_now=None,
+
+                            # TODO:
+                            # Parse opening_hours=24/7.
+                            is_24h=self._is_24h(tags),
+                        )
                     )
 
             # ------------------------------------------------------
@@ -308,7 +386,14 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
 
                 if geometry is not None:
                     parks.append(
-                        Park(geometry=geometry)
+                        Park(
+                            id=element_id,
+                            geometry=geometry,
+
+                            # TODO:
+                            # Calculate polygon area from geometry.
+                            area_m2=None,
+                        )
                     )
 
         return UrbanData(
@@ -316,7 +401,11 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
             police_offices=police_offices,
             benches=benches,
             parks=parks,
-            shadow_zones=[],  # TODO: Implement shadow data source/computation.
+
+            # TODO:
+            # Implement dedicated shadow data source/computation.
+            shadow_zones=[],
+
             covered_area=request.covered_area,
         )
 
@@ -349,7 +438,10 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
 
     def _extract_osm_polygon(self, element: dict) -> Polygon | None:
         """
-        Extracts polygon geometry from an OSM way/relation.
+        Extract polygon geometry from an OSM way/relation element.
+
+        Returns None when the element does not contain enough geometry
+        to construct a polygon.
         """
 
         geometry = element.get("geometry")
@@ -357,7 +449,7 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
         if not geometry:
             return None
 
-        points = [
+        coordinates = [
             Point(
                 lat=coordinate["lat"],
                 lon=coordinate["lon"],
@@ -365,12 +457,40 @@ class DataManagement(IRoadGraphAccess, IContextDataAccess):
             for coordinate in geometry
         ]
 
-        if len(points) < 3:
+        if len(coordinates) < 3:
             return None
 
         return Polygon(
-            points=points
+            coordinates=coordinates
         )
+
+    def _parse_osm_bool(self, value: str | None) -> bool | None:
+        """
+        Convert common OSM boolean tag values into SafeNav booleans.
+
+        Returns None when the value is missing or cannot be interpreted.
+        """
+
+        if value is None:
+            return None
+
+        normalized = value.strip().lower()
+
+        if normalized in {"yes", "true", "1"}:
+            return True
+
+        if normalized in {"no", "false", "0"}:
+            return False
+
+        return None
+
+    def _is_24h(self, tags: dict) -> bool | None:
+        opening_hours = tags.get("opening_hours")
+
+        if opening_hours is None:
+            return None
+
+        return opening_hours.strip().lower() == "24/7"
 
     def _fetch_road_graph_data(self, area: Area, city: str, eps: float) -> GraphData:
         """
