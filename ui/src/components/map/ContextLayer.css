@@ -1,0 +1,73 @@
+/* src/components/map/ContextLayer.css */
+
+/*
+ * Remove some of Leaflet's default tooltip styling so that
+ * contextual information has its own visual presentation.
+ */
+.context-tooltip {
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.97);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Main tooltip container */
+.context-tooltip-content {
+  width: 420px;
+  max-width: 420px;
+
+  overflow: hidden;
+
+  border-radius: 8px;
+}
+
+
+/* Tooltip title */
+.context-tooltip-header {
+  padding: 10px 12px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+/* Raw RouteContext JSON */
+.context-tooltip-json {
+  box-sizing: border-box;
+
+  margin: 0;
+  padding: 12px;
+
+  max-height: 320px;
+  overflow: auto;
+
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+
+/*
+ * Leaflet creates a small triangular arrow for tooltips.
+ * Keep it visually consistent with the context tooltip.
+ */
+.leaflet-tooltip.context-tooltip::before {
+  border-top-color: rgba(255, 255, 255, 0.97);
+}

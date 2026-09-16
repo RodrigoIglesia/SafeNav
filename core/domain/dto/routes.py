@@ -13,6 +13,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from .common import Path, Point, ResponseMetadata, RoutePreferences
+from .geospatial import ContextDescription
 
 
 # === Route Request ===
@@ -142,6 +143,10 @@ class RouteResponse(BaseModel):
     routes: RouteCandidates = Field(
         ...,
         description="Route candidates available to the user",
+    )
+    context: Optional[ContextDescription] = Field(
+        None,
+        description="Contextual information associated with each route candidate",
     )
     scores: Optional[RouteScores] = Field(
         None,

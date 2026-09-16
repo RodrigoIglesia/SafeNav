@@ -58,7 +58,8 @@ from common.utils import haversine_distance_m, convert_networkx_to_graphdata
 import osmnx as ox
 from osmnx._errors import GraphSimplificationError
 import httpx
-from datetime import datetime, time
+from datetime import datetime
+import time
 
 from pathlib import Path
 import hashlib

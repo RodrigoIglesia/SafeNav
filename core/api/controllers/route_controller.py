@@ -40,6 +40,7 @@ def create_route(request_body: RouteRequest, request: Request):
 
     return RouteResponse(
         routes=candidates,
+        context=context_description,
         scores=scores,
         metadata=metadata,
     )

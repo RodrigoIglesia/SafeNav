@@ -1,0 +1,72 @@
+/* src/components/map/ContextLayer.css */
+
+
+/* ===============================
+   Context popup
+   =============================== */
+
+.context-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.97);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Remove Leaflet's default popup content margin */
+.context-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+
+/* Main popup container */
+.context-popup-content {
+  width: 420px;
+  max-width: 420px;
+
+  overflow: hidden;
+
+  border-radius: 8px;
+}
+
+
+/* Popup title */
+.context-popup-header {
+  padding: 10px 12px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+/* Raw RouteContext JSON */
+.context-popup-json {
+  box-sizing: border-box;
+
+  margin: 0;
+  padding: 12px;
+
+  max-height: 320px;
+  overflow: auto;
+
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
+
+  font-size: 11px;
+  line-height: 1.4;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
