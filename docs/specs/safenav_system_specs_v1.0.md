@@ -676,16 +676,48 @@ The **Routing Engine (RE)** implements the routing logic required by:
 
 - **F2 — Candidate Route Calculation**
 
+The purpose of RE is not only to find the fastest or shortest route, but to generate a set of **genuinely different candidate routes of reasonable length**. These candidates are later contextualized by GE and evaluated by CA, which determines the safest and most comfortable option. A candidate set containing near-identical routes would provide no meaningful choice to the evaluation stage.
+
 ### Processing Flow
 
 1. Receive a `RouteRequest`.
-2. Obtain the required routing graph through `IRoadGraphAccess`.
-3. Find the graph nodes nearest to the requested origin and destination.
-4. Execute the configured routing algorithms.
-5. Calculate route distance and estimated travel duration.
-6. Build one `RouteCandidate` for each generated route.
-7. Aggregate the candidates into `RouteCandidates`.
-8. Return the result to the API.
+2. Derive the routing area from origin and destination, enlarged by a detour margin.
+3. Obtain the required routing graph through `IRoadGraphAccess`.
+4. Find the graph nodes nearest to the requested origin and destination.
+5. Build the `Router` for the graph, origin node, and destination node.
+6. Generate alternative routes using the penalty method (see *Candidate Generation*).
+7. Calculate route distance and estimated travel duration from the real edge weights.
+8. Discard empty and duplicated routes.
+9. Build one `RouteCandidate` for each remaining route.
+10. Aggregate the candidates into `RouteCandidates`.
+11. Return the result to the API.
+
+```text
+RouteRequest
+      │
+      ▼
+Build Routing Area (origin, destination + margin)
+      │
+      ▼
+IRoadGraphAccess ──► DM ──► GraphData
+      │
+      ▼
+Nearest graph nodes (origin, destination)
+      │
+      ▼
+Router._alternatives()
+      │
+      ├──► Optimal route (A*)
+      ├──► Alternative 1 (A* with penalties)
+      ├──► ...
+      └──► Alternative k-1
+      │
+      ▼
+Filter empty / duplicated routes
+      │
+      ▼
+RouteCandidates
+```
 
 ### Input
 
@@ -694,6 +726,15 @@ The **Routing Engine (RE)** implements the routing logic required by:
 ### Output
 
 `RouteCandidates`
+
+The output satisfies the following properties:
+
+- It contains between **1** and `MAX_CANDIDATES` candidates.
+- The **first candidate is always the optimal route** for the configured cost (`OPTIMIZE`).
+- The remaining candidates are alternatives ordered by generation.
+- No candidate has an empty geometry.
+- No two candidates have the same node sequence.
+- If no route exists between origin and destination, RE raises an error instead of returning an empty candidate set.
 
 ### Main Method
 
@@ -707,9 +748,213 @@ calculate_routes(
 
 Generates candidate routes for the supplied request.
 
-> [ ] **TODO:** Document the internal `Router` algorithms and their optimization criteria.
->
+**Processing:**
+
+- Builds the routing area.
+- Retrieves the routing graph through `IRoadGraphAccess`.
+- Maps origin and destination to their nearest graph nodes.
+- Generates alternative routes through `Router._alternatives()`.
+- Filters empty and duplicated routes.
+- Builds `RouteCandidates`.
+
+**Input:** `RouteRequest`  
+**Output:** `RouteCandidates`
+
+---
+
+### Routing Area
+
+The routing graph is requested for an area that covers the origin and destination with an additional margin, so that the optimal route and its alternatives can leave the minimal circle containing both points:
+
+```text
+base_area = build_area_from_points([origin, destination])
+
+routing_area.center   = base_area.center
+routing_area.radius_m = base_area.radius_m × AREA_RADIUS_FACTOR + AREA_MARGIN_M
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `AREA_RADIUS_FACTOR` | `1.3` | Proportional enlargement of the base area radius. |
+| `AREA_MARGIN_M` | `500` m | Fixed margin added to the radius. |
+
+---
+
+### Candidate Generation — Penalty Method
+
+Candidates are generated with the **penalty method**:
+
+1. Compute the optimal route with A*.
+2. Increase the cost of every edge used by the route just found by multiplying it by `PENALTY_FACTOR`. Both directions of each edge are penalized.
+3. Compute a new route with A* on the penalized costs.
+4. Accept the new route only if it satisfies the acceptance criteria.
+5. Repeat until `MAX_CANDIDATES` routes are accepted or `max_iterations` searches have been executed.
+
+Edges are penalized after every search, whether or not the resulting route was accepted. Penalties accumulate multiplicatively, so streets used repeatedly become progressively more expensive and the search is pushed towards unexplored streets.
+
+Penalties only affect the **search**. The `distance` and `eta` reported for every candidate are always calculated from the **real, unpenalized** edge weights.
+
+```text
+penalties = {}
+accepted  = []
+
+repeat up to max_iterations:
+    route = A*(cost = weight × penalties)
+    if no route: stop
+
+    if accepted is empty:
+        accept route as optimal; best_cost = real_cost(route)
+    else if real_cost(route) ≤ best_cost × MAX_STRETCH
+         and overlap(route, r) ≤ MAX_OVERLAP for every accepted r:
+        accept route
+
+    if |accepted| = MAX_CANDIDATES: stop
+
+    for each edge (u, v) in route:
+        penalties[u, v] *= PENALTY_FACTOR
+        penalties[v, u] *= PENALTY_FACTOR
+```
+
+#### Acceptance Criteria
+
+A route generated after the optimal one is accepted only if both conditions hold:
+
+| Criterion | Condition | Purpose |
+|---|---|---|
+| **Stretch** | `real_cost(route) ≤ MAX_STRETCH × real_cost(optimal)` | Excludes unreasonable detours. |
+| **Overlap** | `overlap(route, r) ≤ MAX_OVERLAP` for every accepted route `r` | Ensures candidates are genuinely different. |
+
+The overlap of a route with another accepted route is the fraction of the route length shared with it:
+
+```text
+overlap(route, other) = shared_length(route, other) / length(route)
+```
+
+Edges are compared as **undirected** street segments, so a segment walked in opposite directions counts as shared.
+
+#### Parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `MAX_CANDIDATES` | `4` | Maximum number of candidates, including the optimal route. |
+| `OPTIMIZE` | `"eta"` | Base cost: `"eta"` (travel time) or `"distance"`. |
+| `PENALTY_FACTOR` | `1.6` | Cost multiplier applied to edges of each found route. |
+| `MAX_STRETCH` | `1.5` | Maximum cost of an alternative relative to the optimal route. |
+| `MAX_OVERLAP` | `0.7` | Maximum fraction of an alternative shared with any accepted route. |
+| `max_iterations` | `4 × MAX_CANDIDATES` | Maximum number of searches. |
+
+Fewer than `MAX_CANDIDATES` candidates may be returned when the street network does not offer enough sufficiently different routes within the stretch limit (for example, near rivers, highways, or large parks).
+
+#### Design Rationale
+
+- **k-shortest path algorithms (e.g. Yen)** were discarded because they produce routes that typically differ in only one or two segments, which offers no meaningful choice to the Context Analyzer.
+- **Dijkstra and A\*** return the same optimal route for the same cost, so executing both only duplicates candidates. A* is used because it explores fewer nodes.
+- Routing is CPU-bound Python code. Searches are executed sequentially because thread-based parallelism provides no speedup under the Python GIL, and each penalty-method iteration depends on the penalties of the previous one.
+
+---
+
+### Router
+
+The `Router` class implements the path-search algorithms used by RE.
+
+```python
+Router(
+    graph: GraphData,
+    start: GeoPoint,
+    goal: GeoPoint
+)
+```
+
+#### Graph Index
+
+On construction, the Router builds an index of the graph:
+
+- `node_map`: node identifier → node.
+- `adjacency`: node identifier → outgoing edges `(to_node, weight_d, weight_t, edge)`.
+- `max_speed_m_s`: maximum speed in the graph (`weight_d / weight_t`), used by the travel-time heuristic.
+
+Edges referencing unknown nodes are ignored. The index is cached per `GraphData` object (identity-based cache, 4 entries), so several Router instances created for the same graph reuse it.
+
+Using the adjacency index, each search step only examines the outgoing edges of the current node. Complexity of a search is **O(E log V)**.
+
+#### Search Algorithm
+
+All searches share a single implementation with the following properties:
+
+- Priority queue ordered by `cost + heuristic`.
+- Lazy deletion: nodes already closed are skipped when popped again.
+- Only reached nodes are stored, instead of initializing structures for the whole graph.
+- Edges with missing or negative weight are skipped, as required by Dijkstra/A*.
+- Optional `penalties` map `(from_id, to_id) → multiplier` applied to edge weights during the search.
+- Distance and ETA are accumulated during path reconstruction from the edges actually used.
+
+The A* heuristic depends on the optimized cost and never overestimates it, so A* always returns the optimal route:
+
+| `optimize` | Edge weight | Heuristic |
+|---|---|---|
+| `"distance"` | `weight_d` (m) | Haversine distance to goal (m). |
+| `"eta"` | `weight_t` (s) | Haversine distance to goal / `max_speed_m_s` (s). |
+
+If the graph provides no usable speed information, the travel-time heuristic falls back to `0` (Dijkstra behavior).
+
+#### `_alternatives()`
+
+```python
+_alternatives(
+    k: int = 4,
+    optimize: str = "eta",
+    penalty_factor: float = 1.6,
+    max_stretch: float = 1.5,
+    max_overlap: float = 0.7,
+    max_iterations: int | None = None
+) -> list[tuple[list[GeoPoint], float, float]]
+```
+
+Generates up to `k` alternative routes using the penalty method.
+
+**Output:** list of `(path, distance, eta)`, optimal route first. Empty list if no path exists.
+
+#### `_astar()`
+
+```python
+_astar(
+    optimize: str = "distance"
+) -> tuple[list[GeoPoint], float, float]
+```
+
+Computes the optimal route using A*.
+
+**Output:** `(path, distance, eta)`. Returns `([], 0, 0)` if no path exists.
+
+#### `_dijkstra()`
+
+```python
+_dijkstra(
+    optimize: str = "distance"
+) -> tuple[list[GeoPoint], float, float]
+```
+
+Computes the optimal route using Dijkstra. Returns the same result as `_astar()` and is kept for validation and debugging.
+
+**Output:** `(path, distance, eta)`. Returns `([], 0, 0)` if no path exists.
+
+#### Error Handling
+
+| Condition | Behavior |
+|---|---|
+| Invalid `optimize` value | `ValueError` |
+| Start or goal node not in graph | `ValueError` |
+| No path between start and goal | Empty result `([], 0, 0)`; RE raises `ValueError` if no candidate is generated. |
+
 > [ ] **TODO:** Update graph retrieval documentation after completing the multi-city graph design.
+>
+> [ ] **TODO:** Tune `PENALTY_FACTOR`, `MAX_STRETCH`, and `MAX_OVERLAP` with real city data.
+>
+> [ ] **TODO:** Evaluate safety-aware penalties (for example, lower cost near police offices or higher cost on poorly lit streets) so that alternatives explore safer streets during generation.
+>
+> [ ] **TODO:** Evaluate adding a field to `RouteCandidate` identifying the optimal route and the generation method.
+>
+> [ ] **TODO:** Define how `RoutePreferences` affect candidate generation parameters.
 
 ---
 
