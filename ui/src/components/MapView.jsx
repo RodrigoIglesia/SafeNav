@@ -2,7 +2,7 @@
 
 // TODO: Add waiting popup for graph download and route estimation.
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -17,6 +17,9 @@ import { mapStyles } from "../config/mapStyles";
 import FloatingRoutePanel from "./FloatingRoutePanel";
 import RoutesLayer from "./map/RoutesLayer";
 import ContextLayer from "./map/ContextLayer";
+import ContextFilterPanel from "./ContextFilterPanel";
+import { collectContextFeatures } from "./map/contextFeatures";
+import { DEFAULT_VISIBLE_LAYERS } from "../config/contextStyles";
 
 import citiesConfig from "../config/cities.json";
 import { toLatLng } from "../utils/geo";
@@ -117,6 +120,15 @@ export default function MapView() {
 
   const [cityBounds, setCityBounds] = useState(initialBounds);
   const [selectedCity, setSelectedCity] = useState(defaultCityKey);
+
+  // Urban context layers shown on the map
+  const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_LAYERS);
+
+  // Unique urban features of all route candidates
+  const contextFeatures = useMemo(
+    () => collectContextFeatures(route.data?.context),
+    [route.data]
+  );
 
   const errorTimeoutRef = useRef(null);
   const successTimeoutRef = useRef(null);
@@ -274,6 +286,12 @@ export default function MapView() {
           cities={citiesConfig.cities}
         />
 
+        <ContextFilterPanel
+          features={contextFeatures}
+          visibleLayers={visibleLayers}
+          onVisibleLayersChange={setVisibleLayers}
+        />
+
 
         {/* ===========================
             Route endpoints
@@ -303,6 +321,8 @@ export default function MapView() {
         <ContextLayer
           routes={route.data?.routes}
           contextDescription={route.data?.context}
+          features={contextFeatures}
+          visibleLayers={visibleLayers}
           debug={true}
         />
 

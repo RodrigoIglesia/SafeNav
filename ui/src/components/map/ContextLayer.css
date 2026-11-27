@@ -71,3 +71,136 @@
 .leaflet-tooltip.context-tooltip::before {
   border-top-color: rgba(255, 255, 255, 0.97);
 }
+
+/* ===============================
+   Context popup (debug RouteContext)
+   Moved from RoutesLayer.css
+   =============================== */
+
+.context-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.context-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.context-popup-content {
+  width: 420px;
+  max-width: 420px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.context-popup-header {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.context-popup-json {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px;
+  max-height: 320px;
+  overflow: auto;
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+
+/* ===============================
+   Stickers
+   =============================== */
+
+/* Remove Leaflet's default divIcon white box */
+.context-sticker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+.context-sticker {
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  border: 2px solid var(--sticker-color, #6b7280);
+  background: rgba(255, 255, 255, 0.96);
+
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.25),
+    0 0 0 2px rgba(255, 255, 255, 0.85);
+
+  transform: rotate(-6deg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.context-sticker-wrapper:hover .context-sticker {
+  transform: rotate(0deg) scale(1.2);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(255, 255, 255, 0.95);
+}
+
+.context-sticker-emoji {
+  font-size: 15px;
+  line-height: 1;
+  font-family:
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Noto Color Emoji",
+    sans-serif;
+  user-select: none;
+}
+
+
+/* ===============================
+   Sticker tooltip
+   =============================== */
+
+.leaflet-tooltip.context-sticker-tooltip {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: sans-serif;
+  color: #333;
+}
+
+.leaflet-tooltip.context-sticker-tooltip::before {
+  border-top-color: rgba(255, 255, 255, 0.95);
+}
+
+.context-sticker-tooltip-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.context-sticker-tooltip-details {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #6b7280;
+}
